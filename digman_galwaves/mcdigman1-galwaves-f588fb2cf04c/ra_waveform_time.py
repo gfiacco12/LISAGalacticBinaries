@@ -118,6 +118,15 @@ class BinaryTimeWaveformAmpFreqD():
         ExtractAmpPhase_inplace(self.AET_AmpTs, self.AET_PPTs, self.AET_FTs, self.AET_FTds,
                                 self.AmpTs, self.PPTs, self.FTs, self.FTds, self.RRs, self.IIs, self.dRRs, self.dIIs, self.NT)
 
+def TruthParamsCalculator(freq0, mchirp, mtotal):
+    #calculate frequencies using physical models and input them as truth params for the code
+    # 0.6-0.6Mstar binary
+    #1PN order
+    eta = (mchirp/mtotal)**(5/3)
+    fdot = 96/5*np.pi**(8/3)*freq0**(11/3)*mchirp**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*mtotal*freq0)**(2/3))
+    fddot = 96/5*np.pi**(8/3)*freq0**(8/3)*mchirp**(5/3)*fdot * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*mtotal*freq0)**(2/3))
+
+    return fdot, fddot
 
 @njit()
 def ExtractAmpPhase_inplace(AET_Amps, AET_Phases, AET_FTs, AET_FTds, AA, PP, FT, FTd, RRs, IIs, dRRs, dIIs, NT):
