@@ -4,6 +4,7 @@ import numpy as np
 
 from DTMCMC.lapack_wrappers import solve_triangular
 from DTMCMC.jump_manager import JumpManager
+import ra_waveform_time as rwt
 
 # define unique codes for each jump type
 FISHER_FULL = 110
