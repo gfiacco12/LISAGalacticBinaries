@@ -1,5 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "./mcdigman1-galwaves-f588fb2cf04c/WDMWaveletTransforms-master"
-    ]
-}
