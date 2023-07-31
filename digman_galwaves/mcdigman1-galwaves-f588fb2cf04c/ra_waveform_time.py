@@ -7,16 +7,20 @@ from ra_waveform_freq import RAantenna_inplace, spacecraft_vec, get_xis_inplace,
 
 import wdm_const as wc
 from algebra_tools import gradient_homog_2d_inplace
-
+from scipy.optimize import fsolve
 
 idx_amp = 0
-idx_costh = 1
-idx_phi = 2
-idx_freq0 = 3
-idx_freqD = 4
-idx_cosi = 5
-idx_phi0 = 6
-idx_psi = 7
+idx_freq0 = 1
+idx_freqD = 2
+idx_freqDD = 3
+idx_logdl = 4
+idx_mtotal = 5
+idx_mchirp = 6
+idx_costh = 7
+idx_phi = 8
+idx_cosi = 9
+idx_phi0 = 10
+idx_psi = 11
 
 
 # TODO do consistency checks
@@ -46,6 +50,7 @@ class BinaryTimeWaveformAmpFreqD():
         self.PPTs = np.zeros(self.NT)
         self.FTs = np.zeros(self.NT)
         self.FTds = np.zeros(self.NT)
+        self.FTdds = np.zeros(self.NT)
 
         self.dRRs = np.zeros((wc.NC, self.NT))
         self.dIIs = np.zeros((wc.NC, self.NT))
@@ -83,14 +88,20 @@ class BinaryTimeWaveformAmpFreqD():
         phi = self.params[idx_phi]
         freq0 = self.params[idx_freq0]
         freqD = self.params[idx_freqD]
+        freqDD = self.params[idx_freqDD]
         # cosi = self.params[idx_cosi]#np.cos(self.params[idx_incl])
         phi0 = self.params[idx_phi0]  # +np.pi
         # psi = self.params[idx_psi]
+        dl = np.exp(self.params[idx_logdl])
+        m_total = self.params[idx_mtotal]
+        m_chirp = self.params[idx_mchirp]
+
+        TTRef = TaylorT3_ref_time_match(m_total, m_chirp, freq0, TaylorF2_ref_time_guess(m_total,m_chirp,freq0))
 
         kv, _, _ = get_tensor_basis(phi, costh)  # TODO check intrinsic extrinsic separation here
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, amp, phi0, freq0, freqD, self.xis, self.TTs.size)
-
+        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp, dl, phi0, freq0, freqD, freqDD, m_total, m_chirp, TTRef, self.xis, self.TTs.size)
+   
     def update_extrinsic(self):
         """update the internal state for the extrinsic parts of the parameters"""
         # Calculate cos and sin of sky position, inclination, polarization
@@ -164,14 +175,48 @@ def ExtractAmpPhase_inplace(AET_Amps, AET_Phases, AET_FTs, AET_FTds, AA, PP, FT,
         for itrc in range(0, wc.NC):
             AET_FTds[itrc, n] = (AET_FTs[itrc, n+1]-AET_FTs[itrc, n-1]+FT_shift)/(2*wc.DT)+FTd_shift
 
+@njit()
+def TaylorF2_ref_time_guess(Mt,Mc,FI):
+    """This is the TaylorF2 model to 2PN order. DOI: 10.1103/PhysRevD.80.084043"""
+    eta = (Mc/Mt)**(5/3)
+
+    if eta>=0.25:
+        delta = 0.
+    else:
+        delta = np.sqrt(1-4*eta) #(m1-m2)/Mt
+
+
+    c0 = 3/(128*eta)
+    c1 = 20/9*(743/336+11/4*eta)
+
+
+    p0 = 5*c0*Mt/6
+    p1 = 3/5*c1
+
+    nuI = (np.pi*Mt*FI)**(1/3)
+    return p0/nuI**8*(1+p1*nuI**2)*nuI**6
+
+def TaylorT3_ref_time_match(Mt,Mc,f_goal,t_guess):
+    """This is the TaylorT3 model to 1PN order. DOI: 10.1103/PhysRevD.80.084043"""
+    eta = (Mc/Mt)**(5/3)
+
+    c0 = 1/(8*np.pi*Mt)
+    c1 = (743/2688+11/32*eta)
+
+    f_func = lambda th: f_goal-(c0*th**3*(1+c1*th**2))
+    th_guess =  (eta*t_guess/(5*Mt))**(-1/8)
+    th_ref = fsolve(f_func,th_guess)[0]
+    TTRef = (5*Mt)/(eta*th_ref**8)
+    return TTRef
 
 @njit()
-def AmpFreqDeriv_inplace(AS, PS, FS, FDS, Amp, phi0, FI, FD0, TS, NT):
+def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS, Amp, DL, phi0, FI, FD0, FDD0, Mtotal, Mchirp, TTRef, TS, NT):
     """Get time domain waveform to lowest order, simple constant fdot"""
     # compute the intrinsic frequency, phase and amplitude
     for n in range(0, NT):
         t = TS[n]
-        FS[n] = FI+FD0*t
-        FDS[n] = FD0
-        PS[n] = -phi0+2*np.pi*FI*t+np.pi*FD0*t**2
+        FS[n] = FI+FD0*t + (1/2)*FDD0*t**2
+        FDS[n] = FD0 + FDD0*t
+        FDDS[n] = FDD0
+        PS[n] = -phi0+2*np.pi*FI*t+np.pi*FD0*t**2+(np.pi/3)*FDD0*t**3
         AS[n] = Amp

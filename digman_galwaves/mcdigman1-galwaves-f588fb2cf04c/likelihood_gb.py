@@ -14,7 +14,7 @@ import mcmc_params as mcp
 from ra_waveform_time import BinaryTimeWaveformAmpFreqD
 import ra_waveform_time as rwt
 
-fisher_eps_default = np.array([1.e-25, 1.e-4, 1.e-4, 1.e-10, 1.e-19, 1.e-4, 1.e-4, 1.e-4])
+fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4])
 
 
 def get_noisy_gb_likelihood(params_fid, noise_AET_dense, sigma_prior_lim, strategy_params):
@@ -218,9 +218,17 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     low_lims[rwt.idx_amp] = max(params_fid[rwt.idx_amp]-sigma_prior_lim*sigmas[rwt.idx_amp], 0.)
     high_lims[rwt.idx_amp] = params_fid[rwt.idx_amp]+sigma_prior_lim*sigmas[rwt.idx_amp]
 
+    # luminosity distance
+    low_lims[rwt.idx_logdl] = max(params_fid[rwt.idx_logdl]-sigma_prior_lim*sigmas[rwt.idx_logdl], 0.)
+    high_lims[rwt.idx_logdl] = params_fid[rwt.idx_logdl]+sigma_prior_lim*sigmas[rwt.idx_logdl]
+
     # the frequency derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
-    low_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]-sigma_prior_lim*sigmas[rwt.idx_freqD]
+    low_lims[rwt.idx_freqD] = max(params_fid[rwt.idx_freqD]-sigma_prior_lim*sigmas[rwt.idx_freqD], 0.)
     high_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]+sigma_prior_lim*sigmas[rwt.idx_freqD]
+    
+    # the frequency second derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
+    low_lims[rwt.idx_freqDD] = max(params_fid[rwt.idx_freqDD]-sigma_prior_lim*sigmas[rwt.idx_freqDD], 0.0)
+    high_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]+sigma_prior_lim*sigmas[rwt.idx_freqDD]
 
     # make sure initial frequency has at least a few possible characteristic modes at 1/year spacing included
     # but also isn't crossing multiple frequency pixels
@@ -249,11 +257,19 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     low_lims[rwt.idx_phi0] = 0.
     high_lims[rwt.idx_phi0] = np.pi
 
+    #chirp mass priors
+    low_lims[rwt.idx_mchirp] = 0.1 *wc.MSOLAR
+    high_lims[rwt.idx_mchirp] = 1.3 *wc.MSOLAR
+
+    #total mass priors
+    low_lims[rwt.idx_mtotal] = 0*wc.MSOLAR
+    high_lims[rwt.idx_mtotal] = 2.4*wc.MSOLAR
+
     return low_lims, high_lims
 
 
-PARAM_LABELS = [r"$\mathcal{A}$", r"cos$\theta$", r"$\phi$", r"$f_0$", r"$f'$", r"cos$i$", r"$\phi_0$", r"$\psi$"]
-PLOT_LABELS = [r"$\mathcal{A}$", r"cos$\theta$", r"$\phi$", r"$\Delta f_0$ [nHz]", r"$f'$ [nHz$^2$]", r"cos$i$", r"$\phi_0$", r"$\psi$"]
+PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$"] 
+PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta f_0$ [nHz]", r"$f'$ [nHz$^2$]", r"$f''$ [nHz$^3$]", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$"] 
 
 
 def get_param_labels():
@@ -294,6 +310,21 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         elif (i == rwt.idx_freqD):
             samples_got[:, rwt.idx_freqD] *= 1.e18                      # convert frequency in Hz^2 to nHz^2
             params_fid_got[rwt.idx_freqD] *= 1.e18                      # convert frequency in Hz^2 to nHz^2
+        elif (i == rwt.idx_freqDD):
+            #samples_got[:, rwt.idx_freqDD] -= params_fid[rwt.idx_freqDD]
+            samples_got[:, rwt.idx_freqDD] *= 1.e27                      # convert frequency in Hz^2 to nHz^3
+            #params_fid_got[rwt.idx_freqDD] -= params_fid[rwt.idx_freqDD]
+            params_fid_got[rwt.idx_freqDD] *= 1.e27                      # convert frequency in Hz^2 to nHz^3
+        elif (i == rwt.idx_logdl):
+            samples_got[:, rwt.idx_logdl] = np.log(np.exp(samples_got[:,rwt.idx_logdl])/wc.KPCSEC)    #convert back to kpc
+            params_fid_got[rwt.idx_logdl] = np.log(np.exp(params_fid_got[rwt.idx_logdl])/wc.KPCSEC)   #convert back to kpc
+        elif (i == rwt.idx_mtotal):
+            samples_got[:, rwt.idx_mtotal] /= wc.MSOLAR              # Convert to solar masses
+            params_fid_got[rwt.idx_mtotal] /= wc.MSOLAR              # Convert to solar masses
+        elif (i == rwt.idx_mchirp):
+            samples_got[:, rwt.idx_mchirp] /= wc.MSOLAR
+            params_fid_got[rwt.idx_mchirp] /= wc.MSOLAR
+
         labels.append(label)
         params_fin.append(params_fid_got[i])
 

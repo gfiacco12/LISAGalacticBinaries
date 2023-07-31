@@ -23,6 +23,7 @@ from DTMCMC.proposal_strategy_helpers import ProposalStrategyParameters
 from DTMCMC.proposal_manager_helper import get_default_proposal_manager
 import ra_waveform_time as rwt
 from instrument_noise import get_galactic_novar_noise_model
+import wdm_const as wc 
 
 
 if __name__ == '__main__':
@@ -31,9 +32,9 @@ if __name__ == '__main__':
     # starting variables
     n_chain = 8                        # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin = 20000                   # number of iterations to discard as burn in
+    n_burnin = 6000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 40000                 # number of samples to store total
+    store_size = 10000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
@@ -41,7 +42,7 @@ if __name__ == '__main__':
 
     sigma_prior_lim = 20.              # minimum standard deviations to allow around prior in amplitude, frequency, and frequency derivative
 
-    params_true = np.array([1.e-22, -0.26,  4.6,  3.e-3, 2.5e-17, 0.25,  1.5,  1.6])  # true parameters for search
+    params_true = np.array([1.e-22,  10.e-3, 9.e-15, 3.e-26, np.log(10*wc.KPCSEC), 1.2*wc.MSOLAR, 0.522*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6])  # true parameters for search -- Add in total mass and chirp mass
 
     # note that too many chains starting from the fiducial parameters can make the chain converge slower, if it fails to find secondary modes
     n_true_start = 4                   # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)
@@ -104,7 +105,7 @@ if do_corner_plot:
     import matplotlib.pyplot as plt
     import corner
     # reformat the samples to make the plots look nicer
-    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_amp, rwt.idx_freq0, rwt.idx_freqD])
+    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_amp, rwt.idx_freq0, rwt.idx_freqD, rwt.idx_freqDD])
     # create the corner plot figure
     fig = plt.figure(figsize=(10, 7.5))
     figure = corner.corner(samples_format, fig=fig, bins=25, hist_kwargs={"density": True}, show_titles=True, title_fmt=None,
