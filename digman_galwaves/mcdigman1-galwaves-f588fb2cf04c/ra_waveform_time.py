@@ -213,10 +213,12 @@ def TaylorT3_ref_time_match(Mt,Mc,f_goal,t_guess):
 def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS, Amp, DL, phi0, FI, FD0, FDD0, Mtotal, Mchirp, TTRef, TS, NT):
     """Get time domain waveform to lowest order, simple constant fdot"""
     # compute the intrinsic frequency, phase and amplitude
+
+    phiRef = -phi0-2*np.pi*FI*(-TTRef)-np.pi*FD0*(-TTRef)**2-(np.pi/3)*FDD0*(-TTRef)**3
     for n in range(0, NT):
         t = TS[n]
-        FS[n] = FI+FD0*t + (1/2)*FDD0*t**2
-        FDS[n] = FD0 + FDD0*t
+        FS[n] = FI+FD0*(t-TTRef) + (1/2)*FDD0*(t-TTRef)**2
+        FDS[n] = FD0 + FDD0*(t-TTRef)
         FDDS[n] = FDD0
-        PS[n] = -phi0+2*np.pi*FI*t+np.pi*FD0*t**2+(np.pi/3)*FDD0*t**3
+        PS[n] = -phiRef-2*np.pi*FI*(t-TTRef)-np.pi*FD0*(t-TTRef)**2-(np.pi/3)*FDD0*(t-TTRef)**3
         AS[n] = Amp
