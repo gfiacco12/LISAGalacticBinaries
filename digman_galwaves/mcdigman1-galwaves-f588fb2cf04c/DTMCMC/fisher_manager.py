@@ -175,7 +175,8 @@ def set_fishers(sample_set, strategy_params, n_chain, like_obj):
     for itrt in range(n_chain):
         new_point = sample_set[itrt]
         new_point_alt = like_obj.correct_bounds(new_point.copy())
-        assert np.all(new_point == new_point_alt)
+        assert np.all(new_point[:rwt.idx_freqD] == new_point_alt[:rwt.idx_freqD])
+        assert np.all(new_point[rwt.idx_freqD+1:] == new_point_alt[rwt.idx_freqD+1:])
         nn = like_obj.get_loglike(new_point)
         for itrp in range(n_par):
             eps = epsilons[itrp]

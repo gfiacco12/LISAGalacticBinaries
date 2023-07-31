@@ -55,7 +55,8 @@ def get_gb_likelihood(params_fid, data_use, fwt, noise_AET_dense, sigma_prior_li
     low_lims, high_lims = create_prior_model(params_fid, sigmas_in, sigma_prior_lim)  # generate prior model with default sigmas, will refine later
     # need to create the likelihood object first so we can get the sigmas
     like_obj_temp = GalacticBinaryLikelihood(params_fid, data_use, fwt, noise_AET_dense.inv_chol_SAET, low_lims, high_lims, sigmas_in, epsilons)
-
+    params_fid[:] = like_obj_temp.correct_bounds(params_fid.copy())
+    like_obj_temp.params_fid = params_fid
     # get the sigmas we will use to define the prior ranges
     sigma_diag_array, _, _ = set_fishers(np.array([params_fid.copy()]), strategy_params, 1, like_obj_temp)
     sigma_diags = sigma_diag_array[0]
@@ -260,30 +261,51 @@ def get_param_labels():
     return PARAM_LABELS
 
 
-def format_samples_output(samples, params_fid):
+def format_samples_output(samples, params_fid, params_to_format = None):
     """take samples and return version suitable for plotting
         inputs:
             samples: a 2D (n_samples,n_par) float array
             params_fid 1D float array, the fiducial parameters"""
-    labels_loc = PLOT_LABELS.copy()
+    if (params_to_format == None):
+        params_to_format = range(0, np.len(samples[0])) # [0, 1, 2, ..., 12]
+
     samples_got = samples.copy()
     params_fid_got = params_fid.copy()
+    labels_loc = PLOT_LABELS.copy()
 
-    # get the exponent on the amplitude
-    log10_A_base = int(np.floor(np.log10(params_fid[rwt.idx_amp])))
-    labels_loc[rwt.idx_amp] = r"$10^{"+str(-log10_A_base)+r"}$"+labels_loc[rwt.idx_amp]
+    labels = []
+    samples_fin = []
+    params_fin = []
 
-    samples_got[:, rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
-    samples_got[:, rwt.idx_freq0] *= 1.e9                       # convert frequency in Hz to nHz
-    samples_got[:, rwt.idx_freqD] *= 1.e18                      # convert frequency in Hz^2 to nHz^2
-    samples_got[:, rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
+    for i in params_to_format:
+        label = labels_loc[i]
 
-    params_fid_got[rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
-    params_fid_got[rwt.idx_freq0] *= 1.e9                       # convert frequency in Hz to nHz
-    params_fid_got[rwt.idx_freqD] *= 1.e18                      # convert frequency in Hz^2 to nHz^2
-    params_fid_got[rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
+        if (i == rwt.idx_amp):
+            # get the exponent on the amplitude
+            log10_A_base = int(np.floor(np.log10(params_fid[rwt.idx_amp])))
+            label = r"$10^{"+str(-log10_A_base)+r"}$"+label
+            samples_got[:, rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
+            params_fid_got[rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
+        elif (i == rwt.idx_freq0):
+            samples_got[:, rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
+            samples_got[:, rwt.idx_freq0] *= 1.e9                       # convert frequency in Hz to nHz
+            params_fid_got[rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
+            params_fid_got[rwt.idx_freq0] *= 1.e9                       # convert frequency in Hz to nHz
+        elif (i == rwt.idx_freqD):
+            samples_got[:, rwt.idx_freqD] *= 1.e18                      # convert frequency in Hz^2 to nHz^2
+            params_fid_got[rwt.idx_freqD] *= 1.e18                      # convert frequency in Hz^2 to nHz^2
+        labels.append(label)
+        params_fin.append(params_fid_got[i])
 
-    return samples_got, params_fid_got, labels_loc
+    for sample in samples_got:
+        s = []
+        for i in params_to_format:
+            s.append(sample[i])
+        samples_fin.append(s)
+
+    print (labels)
+    
+    return np.array(samples_fin), np.array(params_fin), labels
 
 
 def get_signal_data(params_true, fwt):
