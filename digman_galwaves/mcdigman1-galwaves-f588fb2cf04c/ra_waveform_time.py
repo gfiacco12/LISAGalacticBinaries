@@ -96,11 +96,18 @@ class BinaryTimeWaveformAmpFreqD():
         m_total = self.params[idx_mtotal]
         m_chirp = self.params[idx_mchirp]
 
+        #physical model constants
+        eta = (m_chirp/m_total)**(5/3)
+        freqD_phys = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*m_total*freq0)**(2/3))
+        freqDD_phys = 96/5*np.pi**(8/3)*freq0**(8/3)*m_chirp**(5/3)*freqD_phys * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*m_total*freq0)**(2/3))
+        amp_phys = np.pi**(2/3) * m_chirp**(5/3) * freq0**(2/3) / dl 
+
         TTRef = TaylorT3_ref_time_match(m_total, m_chirp, freq0, TaylorF2_ref_time_guess(m_total,m_chirp,freq0))
 
         kv, _, _ = get_tensor_basis(phi, costh)  # TODO check intrinsic extrinsic separation here
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp, dl, phi0, freq0, freqD, freqDD, m_total, m_chirp, TTRef, self.xis, self.TTs.size)
+        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp, dl, phi0, freq0, freqD, freqDD, m_total, m_chirp, TTRef, self.xis, self.TTs.size)
+        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_phys, phi0, freq0, freqD_phys, freqDD_phys, TTRef, self.xis, self.TTs.size)
    
     def update_extrinsic(self):
         """update the internal state for the extrinsic parts of the parameters"""
@@ -220,7 +227,7 @@ def TaylorT3_ref_time_match(Mt,Mc,f_goal,t_guess):
     return TTRef
 
 @njit()
-def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS, Amp, DL, phi0, FI, FD0, FDD0, Mtotal, Mchirp, TTRef, TS, NT):
+def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS, Amp, phi0, FI, FD0, FDD0, TTRef, TS, NT):
     """Get time domain waveform to lowest order, simple constant fdot"""
     # compute the intrinsic frequency, phase and amplitude
 
