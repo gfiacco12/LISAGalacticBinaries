@@ -32,9 +32,9 @@ if __name__ == '__main__':
     # starting variables
     n_chain = 8                        # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin = 10000                   # number of iterations to discard as burn in
+    n_burnin = 6000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 30000                 # number of samples to store total
+    store_size = 10000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
