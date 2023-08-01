@@ -105,7 +105,7 @@ if do_corner_plot:
     import matplotlib.pyplot as plt
     import corner
     # reformat the samples to make the plots look nicer
-    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_logdl, rwt.idx_mchirp, rwt.idx_mtotal])
+    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_logdl, rwt.idx_mass1, rwt.idx_mass2])
     # create the corner plot figure
     fig = plt.figure(figsize=(10, 7.5))
     figure = corner.corner(samples_format, fig=fig, bins=25, hist_kwargs={"density": True}, show_titles=True, title_fmt=None,
