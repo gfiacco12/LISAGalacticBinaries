@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     sigma_prior_lim = 20.              # minimum standard deviations to allow around prior in amplitude, frequency, and frequency derivative
     fdot, fddot, amp = rwt.TruthParamsCalculator(10.e-3, 0.522*wc.MSOLAR, 1.2*wc.MSOLAR, (10*wc.KPCSEC)) #not log of DL
-    params_true = np.array([amp,  10.e-3, fdot, fddot, np.log(10*wc.KPCSEC), 1.2*wc.MSOLAR, 0.522*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6])  # true parameters for search -- Add in total mass and chirp mass
+    params_true = np.array([amp,  10.e-3, fdot, fddot, np.log(10*wc.KPCSEC), 1.2*wc.MSOLAR, 0.522*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6, 0.6 * wc.MSOLAR, 0.6 * wc.MSOLAR])  # true parameters for search -- Add in total mass and chirp mass
 
     # note that too many chains starting from the fiducial parameters can make the chain converge slower, if it fails to find secondary modes
     n_true_start = 4                   # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)

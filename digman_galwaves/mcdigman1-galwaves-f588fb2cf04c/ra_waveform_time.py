@@ -21,7 +21,8 @@ idx_phi = 8
 idx_cosi = 9
 idx_phi0 = 10
 idx_psi = 11
-
+idx_mass1 = 12
+idx_mass2 = 13
 
 # TODO do consistency checks
 class BinaryTimeWaveformAmpFreqD():
@@ -95,6 +96,8 @@ class BinaryTimeWaveformAmpFreqD():
         dl = np.exp(self.params[idx_logdl])
         m_total = self.params[idx_mtotal]
         m_chirp = self.params[idx_mchirp]
+        mass1 = self.params[idx_mass1]
+        mass2 = self.params[idx_mass2]
 
         #physical model constants
         eta = (m_chirp/m_total)**(5/3)

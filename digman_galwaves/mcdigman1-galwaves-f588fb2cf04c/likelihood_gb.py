@@ -14,7 +14,7 @@ import mcmc_params as mcp
 from ra_waveform_time import BinaryTimeWaveformAmpFreqD
 import ra_waveform_time as rwt
 
-fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4])
+fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-9, 1.e-9])
 
 
 def get_noisy_gb_likelihood(params_fid, noise_AET_dense, sigma_prior_lim, strategy_params):
@@ -265,11 +265,17 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     low_lims[rwt.idx_mtotal] = 0*wc.MSOLAR
     high_lims[rwt.idx_mtotal] = 2.4*wc.MSOLAR
 
+    #mass 1 and 2 priors
+    low_lims[rwt.idx_mass1] = 0 *wc.MSOLAR
+    high_lims[rwt.idx_mass1] = 1.4 *wc.MSOLAR
+    low_lims[rwt.idx_mass2] = 0 *wc.MSOLAR
+    high_lims[rwt.idx_mass2] = 1.4 *wc.MSOLAR
+
     return low_lims, high_lims
 
 
-PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$"] 
-PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta f_0$ [nHz]", r"$f'$ [nHz$^2$]", r"$f''$ [nHz$^3$]", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$"] 
+PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
+PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta f_0$ [nHz]", r"$f'$ [nHz$^2$]", r"$f''$ [nHz$^3$]", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
 
 
 def get_param_labels():
@@ -324,6 +330,12 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         elif (i == rwt.idx_mchirp):
             samples_got[:, rwt.idx_mchirp] /= wc.MSOLAR
             params_fid_got[rwt.idx_mchirp] /= wc.MSOLAR
+        elif (i == rwt.idx_mass1):
+            samples_got[:, rwt.idx_mass1] /= wc.MSOLAR                 # Convert to solar masses
+            params_fid_got[rwt.idx_mass1] /= wc.MSOLAR
+        elif (i == rwt.idx_mass2):
+            samples_got[:, rwt.idx_mass2] /= wc.MSOLAR                 # Convert to solar masses
+            params_fid_got[rwt.idx_mass2] /= wc.MSOLAR
 
         labels.append(label)
         params_fin.append(params_fid_got[i])
