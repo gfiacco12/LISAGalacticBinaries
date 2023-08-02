@@ -110,7 +110,7 @@ class BinaryTimeWaveformAmpFreqD():
         chirpMass = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
         totalMass = mass1 + mass2
         freqD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))) )
-        freqDD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (freqD_tides/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / chirpMass**(5/3))) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3))))
+        freqDD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (freqD_tides/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / chirpMass**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))**2))
         amp_tides = np.pi**(2/3) * chirpMass**(5/3) * freq0**(2/3) / dl 
 
         TTRef = TaylorT3_ref_time_match(m_total, m_chirp, freq0, TaylorF2_ref_time_guess(m_total,m_chirp,freq0))
@@ -119,8 +119,8 @@ class BinaryTimeWaveformAmpFreqD():
         kv, _, _ = get_tensor_basis(phi, costh)  # TODO check intrinsic extrinsic separation here
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp, phi0, freq0, freqD, freqDD, TTRef, self.xis, self.TTs.size)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, TTRef, self.xis, self.TTs.size)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_tides, phi0, freq0, freqD_tides, freqDD_tides, TTRef_tides, self.xis, self.TTs.size)
+        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, TTRef, self.xis, self.TTs.size)
+        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_tides, phi0, freq0, freqD_tides, freqDD_tides, TTRef_tides, self.xis, self.TTs.size)
    
     def update_extrinsic(self):
         """update the internal state for the extrinsic parts of the parameters"""
@@ -147,7 +147,7 @@ def TruthParamsCalculator(freq0, mass1, mass2, dl):
     eta = (chirpMass/totalMass)**(5/3)
     #tides
     fdot_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))) )
-    fddot_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (fdot_tides/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / chirpMass**(5/3))) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3))))
+    fddot_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (fdot_tides/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / chirpMass**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))**2))
     #1PN
     fdot = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*totalMass*freq0)**(2/3))
     fddot = 96/5*np.pi**(8/3)*freq0**(8/3)*chirpMass**(5/3)*fdot * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*totalMass*freq0)**(2/3))
