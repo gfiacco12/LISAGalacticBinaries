@@ -32,7 +32,7 @@ if __name__ == '__main__':
     # starting variables
     n_chain = 8                        # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin = 10000                   # number of iterations to discard as burn in
+    n_burnin = 30000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
     store_size = 100000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
@@ -42,6 +42,7 @@ if __name__ == '__main__':
 
     sigma_prior_lim = 20.              # minimum standard deviations to allow around prior in amplitude, frequency, and frequency derivative
     fdot, fddot, fdot_tides, fddot_tides, amp = rwt.TruthParamsCalculator(10.e-3, 0.6*wc.MSOLAR, 0.6*wc.MSOLAR, (10*wc.KPCSEC)) #not log of DL
+    
     params_true = np.array([amp,  10.e-3, fdot, fddot, np.log(10*wc.KPCSEC), 1.2*wc.MSOLAR, 0.522*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6, 0.6 * wc.MSOLAR, 0.6 * wc.MSOLAR])  # true parameters for search -- Add in total mass and chirp mass
 
     # note that too many chains starting from the fiducial parameters can make the chain converge slower, if it fails to find secondary modes
@@ -105,7 +106,7 @@ if do_corner_plot:
     import matplotlib.pyplot as plt
     import corner
     # reformat the samples to make the plots look nicer
-    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_logdl, rwt.idx_mchirp, rwt.idx_mtotal])
+    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_amp, rwt.idx_freq0, rwt.idx_freqD, rwt. idx_freqDD])
     # create the corner plot figure
     fig = plt.figure(figsize=(10, 7.5))
     figure = corner.corner(samples_format, fig=fig, bins=25, hist_kwargs={"density": True}, show_titles=True, title_fmt=None,

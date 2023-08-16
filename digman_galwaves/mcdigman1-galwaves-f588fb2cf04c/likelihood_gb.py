@@ -3,9 +3,16 @@ module to manage a likelihood object for the galactic binary search"""
 import numpy as np
 from numba import njit
 
+
 from DTMCMC.correction_helpers import reflect_cosines, reflect_into_range
 from DTMCMC.fisher_manager import set_fishers
 from DTMCMC.likelihood import Likelihood
+
+# noah's imports
+import WDMWaveletTransforms.wavelet_transforms as wt
+import matplotlib.pyplot as plt
+import os
+import inspect
 
 from Chirp_WDM_funcs import wavemaket_multi_inplace, unpack_wavelets
 from instrument_noise import diagonal_dense_log_likelihood_helper, diagonal_dense_snr_helper
@@ -42,6 +49,7 @@ def get_noiseless_gb_likelihood(params_fid, noise_AET_dense, sigma_prior_lim, st
     fwt = BinaryTimeWaveformAmpFreqD(params_fid.copy(), 0, wc.Nt)       # get the waveform object
     signal_full = get_signal_data(params_fid, fwt)                      # get the signal
     signal_whitened = noise_AET_dense.whiten_dense_data(signal_full)    # whiten the signal
+
     return get_gb_likelihood(params_fid, signal_whitened, fwt, noise_AET_dense, sigma_prior_lim, strategy_params)  # return the likelihood object
 
 
@@ -313,14 +321,14 @@ def format_samples_output(samples, params_fid, params_to_format = None):
             samples_got[:, rwt.idx_freq0] *= 1.e9                       # convert frequency in Hz to nHz
             params_fid_got[rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
             params_fid_got[rwt.idx_freq0] *= 1.e9                       # convert frequency in Hz to nHz
-        elif (i == rwt.idx_freqD):
+            """ elif (i == rwt.idx_freqD):
             samples_got[:, rwt.idx_freqD] *= 1.e18                      # convert frequency in Hz^2 to nHz^2
             params_fid_got[rwt.idx_freqD] *= 1.e18                      # convert frequency in Hz^2 to nHz^2
         elif (i == rwt.idx_freqDD):
             #samples_got[:, rwt.idx_freqDD] -= params_fid[rwt.idx_freqDD]
             samples_got[:, rwt.idx_freqDD] *= 1.e27                      # convert frequency in Hz^2 to nHz^3
             #params_fid_got[rwt.idx_freqDD] -= params_fid[rwt.idx_freqDD]
-            params_fid_got[rwt.idx_freqDD] *= 1.e27                      # convert frequency in Hz^2 to nHz^3
+            params_fid_got[rwt.idx_freqDD] *= 1.e27                      # convert frequency in Hz^2 to nHz^3 """
         elif (i == rwt.idx_logdl):
             samples_got[:, rwt.idx_logdl] = np.log(np.exp(samples_got[:,rwt.idx_logdl])/wc.KPCSEC)    #convert back to kpc
             params_fid_got[rwt.idx_logdl] = np.log(np.exp(params_fid_got[rwt.idx_logdl])/wc.KPCSEC)   #convert back to kpc

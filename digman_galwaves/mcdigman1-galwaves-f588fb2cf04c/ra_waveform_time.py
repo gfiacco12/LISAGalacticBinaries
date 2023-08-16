@@ -106,7 +106,7 @@ class BinaryTimeWaveformAmpFreqD():
         amp_1PN = np.pi**(2/3) * m_chirp**(5/3) * freq0**(2/3) / dl 
 
         #physical model - tides
-        I_wd = 8.51e-10 * ( (mass1/0.6*wc.MSOLAR)**(1/3) + (mass2/0.6*wc.MSOLAR)**(1/3) )
+        I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
         chirpMass = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
         totalMass = mass1 + mass2
         freqD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))) )
@@ -118,8 +118,8 @@ class BinaryTimeWaveformAmpFreqD():
 
         kv, _, _ = get_tensor_basis(phi, costh)  # TODO check intrinsic extrinsic separation here
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp, phi0, freq0, freqD, freqDD, TTRef, self.xis, self.TTs.size)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, TTRef, self.xis, self.TTs.size)
+        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp, phi0, freq0, freqD, freqDD, TTRef, self.xis, self.TTs.size)
+        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, TTRef, self.xis, self.TTs.size)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_tides, phi0, freq0, freqD_tides, freqDD_tides, TTRef_tides, self.xis, self.TTs.size)
    
     def update_extrinsic(self):
@@ -141,7 +141,7 @@ class BinaryTimeWaveformAmpFreqD():
 def TruthParamsCalculator(freq0, mass1, mass2, dl):
     #calculate frequencies using physical models and input them as truth params for the code
     # 0.6-0.6Mstar binary
-    I_wd = 8.51e-10 * ( (mass1/0.6*wc.MSOLAR)**(1/3) + (mass2/0.6*wc.MSOLAR)**(1/3) )
+    I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
     chirpMass = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
     totalMass = mass1 + mass2
     eta = (chirpMass/totalMass)**(5/3)
