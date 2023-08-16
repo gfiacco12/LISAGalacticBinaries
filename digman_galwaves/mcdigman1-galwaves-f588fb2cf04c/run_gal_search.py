@@ -13,6 +13,7 @@ and plot results"""
 from time import perf_counter
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 import likelihood_gb as trial_likelihood
 
@@ -32,9 +33,9 @@ if __name__ == '__main__':
     # starting variables
     n_chain = 8                        # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin = 30000                   # number of iterations to discard as burn in
+    n_burnin = 10000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 100000                 # number of samples to store total
+    store_size = 30000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
@@ -93,12 +94,15 @@ if __name__ == '__main__':
     corr_sum.final_prints(mcc, n_burnin)
 
     # get flattened samples for plotting
-    samples_flattened, logLs_flattened = mcc.get_stored_flattened(corr_sum.restrict_n_burnin(mcc, n_burnin))
+    samples_flattened, logLs_flattened = mcc.get_stored_flattened(corr_sum.restrict_n_burnin(mcc, n_burnin)) 
+   
+    plt.hist(logLs_flattened)
+    plt.title("Loglikelihood of Samples")
+    plt.show()
 
     tf = perf_counter()
 
     print('full search time ', str(tf-t0)+'s')
-
 
 do_corner_plot = True
 if do_corner_plot:

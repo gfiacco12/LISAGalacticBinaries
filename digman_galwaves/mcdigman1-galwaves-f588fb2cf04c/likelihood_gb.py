@@ -231,12 +231,12 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     high_lims[rwt.idx_logdl] = params_fid[rwt.idx_logdl]+sigma_prior_lim*sigmas[rwt.idx_logdl]
 
     # the frequency derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
-    low_lims[rwt.idx_freqD] = max(params_fid[rwt.idx_freqD]-sigma_prior_lim*sigmas[rwt.idx_freqD], 0.)
-    high_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]+sigma_prior_lim*sigmas[rwt.idx_freqD]
+    low_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]-2*sigma_prior_lim*sigmas[rwt.idx_freqD]
+    high_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]+2*sigma_prior_lim*sigmas[rwt.idx_freqD]
     
     # the frequency second derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
-    low_lims[rwt.idx_freqDD] = max(params_fid[rwt.idx_freqDD]-sigma_prior_lim*sigmas[rwt.idx_freqDD], 0.0)
-    high_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]+sigma_prior_lim*sigmas[rwt.idx_freqDD]
+    low_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]-2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
+    high_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]+2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
 
     # make sure initial frequency has at least a few possible characteristic modes at 1/year spacing included
     # but also isn't crossing multiple frequency pixels
