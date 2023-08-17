@@ -118,7 +118,7 @@ class BinaryTimeWaveformAmpFreqD():
 
         kv, _, _ = get_tensor_basis(phi, costh)  # TODO check intrinsic extrinsic separation here
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp, phi0, freq0, freqD, freqDD, TTRef, self.xis, self.TTs.size)
+        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp, phi0, freq0, freqD, freqDD, 0, self.xis, self.TTs.size)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, TTRef, self.xis, self.TTs.size)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_tides, phi0, freq0, freqD_tides, freqDD_tides, TTRef_tides, self.xis, self.TTs.size)
    
