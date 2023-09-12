@@ -21,7 +21,7 @@ import mcmc_params as mcp
 from ra_waveform_time import BinaryTimeWaveformAmpFreqD
 import ra_waveform_time as rwt
 
-fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-9, 1.e-9])
+fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-9, 1.e-9, 1.e-15])
 
 
 def get_noisy_gb_likelihood(params_fid, noise_AET_dense, sigma_prior_lim, strategy_params):
@@ -279,11 +279,15 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     low_lims[rwt.idx_mass2] = 0 *wc.MSOLAR
     high_lims[rwt.idx_mass2] = 1.4 *wc.MSOLAR
 
+    #moment of inertia priors (in s)
+    low_lims[rwt.idx_iwd] = 1.e-25
+    high_lims[rwt.idx_iwd] = 1.e-8
+
     return low_lims, high_lims
 
 
 PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
-PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta f_0$ [nHz]", r"$f'$ [nHz$^2$]", r"$f''$ [nHz$^3$]", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
+PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\gamma$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]", r'$I_{WD} [gcm^{2}]$', r'$\delta$'] 
 
 
 def get_param_labels():
@@ -317,18 +321,16 @@ def format_samples_output(samples, params_fid, params_to_format = None):
             samples_got[:, rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
             params_fid_got[rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
         elif (i == rwt.idx_freq0):
-            samples_got[:, rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
-            samples_got[:, rwt.idx_freq0] *= 1.e9                       # convert frequency in Hz to nHz
-            params_fid_got[rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
-            params_fid_got[rwt.idx_freq0] *= 1.e9                       # convert frequency in Hz to nHz
-            """ elif (i == rwt.idx_freqD):
-            samples_got[:, rwt.idx_freqD] *= 1.e18                      # convert frequency in Hz^2 to nHz^2
-            params_fid_got[rwt.idx_freqD] *= 1.e18                      # convert frequency in Hz^2 to nHz^2
+            #samples_got[:, rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
+            samples_got[:, rwt.idx_freq0] *= 4*(wc.SECSYEAR)                       # convert frequency in Hz to dimensionless
+            #params_fid_got[rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
+            params_fid_got[rwt.idx_freq0] *= 4*(wc.SECSYEAR)                       # convert frequency in Hz to dimensionless
+        elif (i == rwt.idx_freqD):
+            samples_got[:, rwt.idx_freqD] *= (4*wc.SECSYEAR)**2                       # convert frequency in Hz^2 to dimensionless
+            params_fid_got[rwt.idx_freqD] *= (4*wc.SECSYEAR)**2                     # convert frequency in Hz^2 to dimensionless
         elif (i == rwt.idx_freqDD):
-            #samples_got[:, rwt.idx_freqDD] -= params_fid[rwt.idx_freqDD]
-            samples_got[:, rwt.idx_freqDD] *= 1.e27                      # convert frequency in Hz^2 to nHz^3
-            #params_fid_got[rwt.idx_freqDD] -= params_fid[rwt.idx_freqDD]
-            params_fid_got[rwt.idx_freqDD] *= 1.e27                      # convert frequency in Hz^2 to nHz^3 """
+            samples_got[:, rwt.idx_freqDD] = samples_got[:, rwt.idx_freqDD] * (4*wc.SECSYEAR)**3                      # convert frequency in Hz^2 to dimensionless
+            params_fid_got[rwt.idx_freqDD] = params_fid_got[rwt.idx_freqDD] * (4*wc.SECSYEAR)**3                     # convert frequency in Hz^2 to dimensionless
         elif (i == rwt.idx_logdl):
             samples_got[:, rwt.idx_logdl] = np.log(np.exp(samples_got[:,rwt.idx_logdl])/wc.KPCSEC)    #convert back to kpc
             params_fid_got[rwt.idx_logdl] = np.log(np.exp(params_fid_got[rwt.idx_logdl])/wc.KPCSEC)   #convert back to kpc
@@ -344,7 +346,10 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         elif (i == rwt.idx_mass2):
             samples_got[:, rwt.idx_mass2] /= wc.MSOLAR                 # Convert to solar masses
             params_fid_got[rwt.idx_mass2] /= wc.MSOLAR
-
+        elif (i == rwt.idx_iwd):
+            samples_got[:, rwt.idx_iwd] *= wc.SECIWD                 # Convert to cgs
+            params_fid_got[rwt.idx_iwd] *= wc.SECIWD
+       
         labels.append(label)
         params_fin.append(params_fid_got[i])
 
@@ -352,8 +357,17 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         s = []
         for i in params_to_format:
             s.append(sample[i])
+        gamma = s[rwt.idx_freqDD] 
+        alpha = s[rwt.idx_freq0]
+        beta = s[rwt.idx_freqD]
+        delta = (gamma - (11/3) * (beta**2 / alpha))
+        s.append(delta)
         samples_fin.append(s)
 
+    delta_params = (params_fid_got[rwt.idx_freqDD] - (11/3)*(params_fid_got[rwt.idx_freqD]**2 / params_fid_got[rwt.idx_freq0]))
+    params_fin.append(delta_params)
+
+    labels.append(r"$\delta$")
     print (labels)
     
     return np.array(samples_fin), np.array(params_fin), labels
