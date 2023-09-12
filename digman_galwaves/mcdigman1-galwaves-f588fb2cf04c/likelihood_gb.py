@@ -287,7 +287,7 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
 
 
 PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
-PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\gamma$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]", r'$I_{WD} [gcm^{2}]$', r'$\delta$'] 
+PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\gamma$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]", r'$I_{WD} [gcm^{2}]$'] 
 
 
 def get_param_labels():
@@ -347,8 +347,8 @@ def format_samples_output(samples, params_fid, params_to_format = None):
             samples_got[:, rwt.idx_mass2] /= wc.MSOLAR                 # Convert to solar masses
             params_fid_got[rwt.idx_mass2] /= wc.MSOLAR
         elif (i == rwt.idx_iwd):
-            samples_got[:, rwt.idx_iwd] *= wc.SECIWD                 # Convert to cgs
-            params_fid_got[rwt.idx_iwd] *= wc.SECIWD
+            samples_got[:, rwt.idx_iwd] /= wc.IWDtoSEC                 # Convert to cgs
+            params_fid_got[rwt.idx_iwd] /= wc.IWDtoSEC
        
         labels.append(label)
         params_fin.append(params_fid_got[i])
@@ -357,17 +357,17 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         s = []
         for i in params_to_format:
             s.append(sample[i])
-        gamma = s[rwt.idx_freqDD] 
-        alpha = s[rwt.idx_freq0]
-        beta = s[rwt.idx_freqD]
-        delta = (gamma - (11/3) * (beta**2 / alpha))
-        s.append(delta)
+        # gamma = s[rwt.idx_freqDD] 
+        # alpha = s[rwt.idx_freq0]
+        # beta = s[rwt.idx_freqD]
+        # delta = (gamma - (11/3) * (beta**2 / alpha))
+        # s.append(delta)
         samples_fin.append(s)
 
-    delta_params = (params_fid_got[rwt.idx_freqDD] - (11/3)*(params_fid_got[rwt.idx_freqD]**2 / params_fid_got[rwt.idx_freq0]))
-    params_fin.append(delta_params)
+    # delta_params = (params_fid_got[rwt.idx_freqDD] - (11/3)*(params_fid_got[rwt.idx_freqD]**2 / params_fid_got[rwt.idx_freq0]))
+    # params_fin.append(delta_params)
 
-    labels.append(r"$\delta$")
+    # labels.append(r"$\delta$")
     print (labels)
     
     return np.array(samples_fin), np.array(params_fin), labels

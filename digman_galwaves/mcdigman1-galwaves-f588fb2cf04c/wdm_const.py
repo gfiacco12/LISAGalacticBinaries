@@ -9,7 +9,7 @@ AU = 1.4959787e11         # Astronomical Unit in meters
 SQ3 = 1.732050807568877   # sqrt(3)
 MSOLAR = 4.925e-6  # solar mass to seconds -- added by Grace
 KPCSEC = 1.02867e11  #kpc to seconds
-SECIWD = 3.64318e43   #seconds to g*cm^2. Divide to go into s from cgs. Multiply to go back
+IWDtoSEC = 2.74486e-60 #cm^2g to s^3 for moment of inertia - multiply
 
 mode_select = 'GB'
 

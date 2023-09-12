@@ -117,18 +117,19 @@ class BinaryTimeWaveformAmpFreqD():
 
         #physical model - tides, Moment of Inertia, Chirp Mass
         freqD_tides_Iwd = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))) )
-        freqDD_tides_Iwd = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (freqD_tides/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / m_chirp**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))**2))
+        freqDD_tides_Iwd = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (freqD_tides_Iwd/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / m_chirp**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))**2))
 
         #reference times for each model
         TTRef = TaylorT3_ref_time_match(m_total, m_chirp, freq0, TaylorF2_ref_time_guess(m_total,m_chirp,freq0))
         TTRef_tides = TaylorT3_ref_time_match(totalMass, chirpMass, freq0, TaylorF2_ref_time_guess(totalMass,chirpMass,freq0))
+        TTRef_Iwd = TaylorT3_ref_time_match(1.2*wc.MSOLAR, m_chirp, freq0, TaylorF2_ref_time_guess(1.2*wc.MSOLAR,m_chirp,freq0))
 
         kv, _, _ = get_tensor_basis(phi, costh)  # TODO check intrinsic extrinsic separation here
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp, phi0, freq0, freqD, freqDD, 0, self.xis, self.TTs.size)
+        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp, phi0, freq0, freqD, freqDD, 0, self.xis, self.TTs.size)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, TTRef, self.xis, self.TTs.size)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_tides, phi0, freq0, freqD_tides, freqDD_tides, TTRef_tides, self.xis, self.TTs.size)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_tides_Iwd, freqDD_tides_Iwd, TTRef, self.xis, self.TTs.size)
+        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_tides_Iwd, freqDD_tides_Iwd, TTRef_Iwd, self.xis, self.TTs.size)
 
     def update_extrinsic(self):
         """update the internal state for the extrinsic parts of the parameters"""
@@ -148,8 +149,7 @@ class BinaryTimeWaveformAmpFreqD():
 
 def TruthParamsCalculator(freq0, mass1, mass2, dl):
     #calculate frequencies using physical models and input them as truth params for the code
-    # 0.6-0.6Mstar binary
-    I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
+    I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) ) # this is in s^3
     chirpMass = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
     totalMass = mass1 + mass2
     eta = (chirpMass/totalMass)**(5/3)
