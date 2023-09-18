@@ -357,17 +357,17 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         s = []
         for i in params_to_format:
             s.append(sample[i])
-        # gamma = s[rwt.idx_freqDD] 
-        # alpha = s[rwt.idx_freq0]
-        # beta = s[rwt.idx_freqD]
-        # delta = (gamma - (11/3) * (beta**2 / alpha))
-        # s.append(delta)
+        gamma = s[rwt.idx_freqDD] 
+        alpha = s[rwt.idx_freq0]
+        beta = s[rwt.idx_freqD]
+        delta = (gamma - (11/3) * (beta**2 / alpha))
+        s.append(delta)
         samples_fin.append(s)
 
-    # delta_params = (params_fid_got[rwt.idx_freqDD] - (11/3)*(params_fid_got[rwt.idx_freqD]**2 / params_fid_got[rwt.idx_freq0]))
-    # params_fin.append(delta_params)
+    delta_params = (params_fid_got[rwt.idx_freqDD] - (11/3)*(params_fid_got[rwt.idx_freqD]**2 / params_fid_got[rwt.idx_freq0]))
+    params_fin.append(delta_params)
 
-    # labels.append(r"$\delta$")
+    labels.append(r"$\delta$")
     print (labels)
     
     return np.array(samples_fin), np.array(params_fin), labels

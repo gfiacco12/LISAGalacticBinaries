@@ -12,9 +12,9 @@ def makeHistogramofLogLike(data):
 def makeScatterPlot(data_x, data_y):
     plt.figure()
     plt.scatter(data_x, data_y)
-    plt.title("Scatter Plot of LogL vs $\dot{f}$")
+    plt.title("Scatter Plot of LogL vs alpha - Mc, Iwd Tides Model")
     plt.xlabel("Log likelihood")
-    plt.ylabel("$\dot{f}$")
+    plt.ylabel("alpha")
     plt.show()
     return
 
@@ -26,3 +26,15 @@ def plotAutoCorrelationLength(data, lags):
     plt.ylabel("Correlation Coefficient")
     plt.show()
     return
+
+def plotChains(data, N_blocks):
+    plt.figure()
+    for i in range(len(data[1])):
+        chains = np.array(data)[:,i]
+        iter = np.linspace(0, len(data[0])*1000, N_blocks)
+        plt.plot(iter, chains, label="Chain %s" % i)
+    plt.title("Trace Plot")
+    plt.legend()
+    plt.xlabel("Iterations")
+    plt.ylabel("LogL")
+    plt.show()

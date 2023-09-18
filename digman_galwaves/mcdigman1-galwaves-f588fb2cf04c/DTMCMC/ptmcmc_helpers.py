@@ -106,8 +106,9 @@ class PTMCMCChain():
 
         flat_shape = ((self.samples_store.shape[0]-n_burnin_thin-1)//thin+1)*n_chain_out
         samples_flattened = self.samples_store[n_burnin_thin::thin, :n_chain_out, :].reshape(flat_shape, self.n_par)
+        logLs_unflattened = self.samples_store[n_burnin_thin::thin, :n_chain_out, :]
         logLs_flattened = self.logLs_store[n_burnin_thin::thin, :n_chain_out].reshape(flat_shape)
-        return samples_flattened, logLs_flattened
+        return samples_flattened, logLs_flattened, logLs_unflattened
 
     def store_samples(self):
         """store the samples from the current block in the memory block"""
