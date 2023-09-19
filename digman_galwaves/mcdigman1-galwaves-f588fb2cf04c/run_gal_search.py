@@ -32,11 +32,11 @@ if __name__ == '__main__':
     t0 = perf_counter()
 
     # starting variables
-    n_chain = 15                        # number of total chains for parallel tempering
+    n_chain = 10                        # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin =8000                   # number of iterations to discard as burn in
+    n_burnin =10000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 30000                 # number of samples to store total
+    store_size = 100000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     #makeScatterPlot(logLs_flattened, samples_flattened[:,1])
     #iteration_number = np.linspace(0, store_size, len(logLs_flattened))
     print(mcc.logL_means)
-    plotChains(mcc.logL_means, N_blocks)
+    plotChains(mcc.logL_means)
 
     #plotAutoCorrelationLength(samples_flattened[:,2], 1000)
 

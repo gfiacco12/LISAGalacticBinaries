@@ -27,14 +27,17 @@ def plotAutoCorrelationLength(data, lags):
     plt.show()
     return
 
-def plotChains(data, N_blocks):
+def plotChains(data):
     plt.figure()
-    for i in range(len(data[1])):
+    N_blocks = len(data)
+    N_chains = len(data[0])
+    for i in range(N_chains - 1):
         chains = np.array(data)[:,i]
-        iter = np.linspace(0, len(data[0])*1000, N_blocks)
-        plt.plot(iter, chains, label="Chain %s" % i)
+        iter = np.linspace(0, (N_blocks - 1)*1000, N_blocks)
+        plt.plot(iter, chains)
     plt.title("Trace Plot")
     plt.legend()
+    plt.ylim(-1e5, 7e5)
     plt.xlabel("Iterations")
     plt.ylabel("LogL")
     plt.show()
