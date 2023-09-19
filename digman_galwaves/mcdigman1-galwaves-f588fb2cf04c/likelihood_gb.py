@@ -21,7 +21,7 @@ import mcmc_params as mcp
 from ra_waveform_time import BinaryTimeWaveformAmpFreqD
 import ra_waveform_time as rwt
 
-fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-9, 1.e-9, 1.e-15])
+fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-9, 1.e-9, 1.e-15, 1.e-43])
 
 
 def get_noisy_gb_likelihood(params_fid, noise_AET_dense, sigma_prior_lim, strategy_params):
@@ -237,14 +237,17 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     # the frequency second derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
     low_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]-2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
     high_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]+2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
-
+   
+    low_lims[rwt.idx_freqDDD] = params_fid[rwt.idx_freqDDD]-2*sigma_prior_lim*sigmas[rwt.idx_freqDDD]
+    high_lims[rwt.idx_freqDDD] = params_fid[rwt.idx_freqDDD]+2*sigma_prior_lim*sigmas[rwt.idx_freqDDD]
     # make sure initial frequency has at least a few possible characteristic modes at 1/year spacing included
     # but also isn't crossing multiple frequency pixels
     # and if both of those constraints are satisfied then do sigma boundaries
     delta_freq = max(min(sigma_prior_lim*sigmas[rwt.idx_freq0], 2*wc.DF), 1.25/wc.SECSYEAR)
-    low_lims[rwt.idx_freq0] = max(params_fid[rwt.idx_freq0]-delta_freq, 0.)
-    high_lims[rwt.idx_freq0] = min(params_fid[rwt.idx_freq0]+delta_freq, wc.Nf*wc.DF)
-
+    #low_lims[rwt.idx_freq0] = max(params_fid[rwt.idx_freq0]-delta_freq, 0.)
+    #high_lims[rwt.idx_freq0] = min(params_fid[rwt.idx_freq0]+delta_freq, wc.Nf*wc.DF)
+    low_lims[rwt.idx_freq0] = params_fid[rwt.idx_freq0]-2*sigma_prior_lim*sigmas[rwt.idx_freq0]
+    high_lims[rwt.idx_freq0] = params_fid[rwt.idx_freq0]+2*sigma_prior_lim*sigmas[rwt.idx_freq0]
     # assume ecliptic latitude is just restricted by being physical
     low_lims[rwt.idx_costh] = -1.
     high_lims[rwt.idx_costh] = 1.
@@ -287,7 +290,7 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
 
 
 PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
-PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\gamma$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]", r'$I_{WD} [gcm^{2}]$'] 
+PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\gamma$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]", r'$I_{WD} [gcm^{2}]$', r"$\kappa$"] 
 
 
 def get_param_labels():
@@ -349,6 +352,9 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         elif (i == rwt.idx_iwd):
             samples_got[:, rwt.idx_iwd] /= wc.IWDtoSEC                 # Convert to cgs
             params_fid_got[rwt.idx_iwd] /= wc.IWDtoSEC
+        elif (i == rwt.idx_freqDDD):
+            samples_got[:, rwt.idx_freqDDD] = samples_got[:, rwt.idx_freqDDD] * (4*wc.SECSYEAR)**4                      # convert frequency in Hz^2 to dimensionless
+            params_fid_got[rwt.idx_freqDDD] = params_fid_got[rwt.idx_freqDDD] * (4*wc.SECSYEAR)**4 
        
         labels.append(label)
         params_fin.append(params_fid_got[i])

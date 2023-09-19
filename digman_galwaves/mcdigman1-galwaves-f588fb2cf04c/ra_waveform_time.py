@@ -24,6 +24,7 @@ idx_psi = 11
 idx_mass1 = 12
 idx_mass2 = 13
 idx_iwd = 14
+idx_freqDDD = 15
 
 # TODO do consistency checks
 class BinaryTimeWaveformAmpFreqD():
@@ -53,6 +54,7 @@ class BinaryTimeWaveformAmpFreqD():
         self.FTs = np.zeros(self.NT)
         self.FTds = np.zeros(self.NT)
         self.FTdds = np.zeros(self.NT)
+        self.FTddds = np.zeros(self.NT)
 
         self.dRRs = np.zeros((wc.NC, self.NT))
         self.dIIs = np.zeros((wc.NC, self.NT))
@@ -91,6 +93,7 @@ class BinaryTimeWaveformAmpFreqD():
         freq0 = self.params[idx_freq0]
         freqD = self.params[idx_freqD]
         freqDD = self.params[idx_freqDD]
+        freqDDD = self.params[idx_freqDDD]
         # cosi = self.params[idx_cosi]#np.cos(self.params[idx_incl])
         phi0 = self.params[idx_phi0]  # +np.pi
         # psi = self.params[idx_psi]
@@ -102,34 +105,36 @@ class BinaryTimeWaveformAmpFreqD():
         I_wd = self.params[idx_iwd]
 
         #physical model constants - 1PN
-        eta = (m_chirp/m_total)**(5/3)
-        freqD_1PN = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*m_total*freq0)**(2/3))
-        freqDD_1PN = 96/5*np.pi**(8/3)*freq0**(8/3)*m_chirp**(5/3)*freqD_1PN * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*m_total*freq0)**(2/3))
-        amp_1PN = np.pi**(2/3) * m_chirp**(5/3) * freq0**(2/3) / dl 
+        # eta = (m_chirp/m_total)**(5/3)
+        # fdot_pp = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3)
+        # freqD_1PN = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*m_total*freq0)**(2/3))
+        # freqDD_1PN = 96/5*np.pi**(8/3)*freq0**(8/3)*m_chirp**(5/3)*freqD_1PN * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*m_total*freq0)**(2/3))
+        # freqDDD_1PN = (19/3) * ((freqD_1PN * freqDD_1PN) / freq0) * ( 1 + (2/19) * (fdot_pp / freqD_1PN) * (1 + ((13/3)*(freqD_1PN**2 / (freq0 * freqDD_1PN)))) * (((743/1344)-(11*eta/16))*((8*np.pi*m_total*freq0)**(2/3))) )
+        # amp_1PN = np.pi**(2/3) * m_chirp**(5/3) * freq0**(2/3) / dl 
 
-        #physical model - tides
-        #I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
-        chirpMass = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
-        totalMass = mass1 + mass2
-        freqD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))) )
-        freqDD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (freqD_tides/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / chirpMass**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))**2))
-        amp_tides = np.pi**(2/3) * chirpMass**(5/3) * freq0**(2/3) / dl
+        # #physical model - tides
+        # #I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
+        # chirpMass = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
+        # totalMass = mass1 + mass2
+        # freqD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))) )
+        # freqDD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (freqD_tides/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / chirpMass**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))**2))
+        # amp_tides = np.pi**(2/3) * chirpMass**(5/3) * freq0**(2/3) / dl
 
-        #physical model - tides, Moment of Inertia, Chirp Mass
-        freqD_tides_Iwd = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))) )
-        freqDD_tides_Iwd = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (freqD_tides_Iwd/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / m_chirp**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))**2))
+        # #physical model - tides, Moment of Inertia, Chirp Mass
+        # freqD_tides_Iwd = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))) )
+        # freqDD_tides_Iwd = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (freqD_tides_Iwd/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / m_chirp**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))**2))
 
-        #reference times for each model
-        TTRef = TaylorT3_ref_time_match(m_total, m_chirp, freq0, TaylorF2_ref_time_guess(m_total,m_chirp,freq0))
-        TTRef_tides = TaylorT3_ref_time_match(totalMass, chirpMass, freq0, TaylorF2_ref_time_guess(totalMass,chirpMass,freq0))
-        TTRef_Iwd = TaylorT3_ref_time_match(1.2*wc.MSOLAR, m_chirp, freq0, TaylorF2_ref_time_guess(1.2*wc.MSOLAR,m_chirp,freq0))
+        # #reference times for each model
+        # TTRef = TaylorT3_ref_time_match(m_total, m_chirp, freq0, TaylorF2_ref_time_guess(m_total,m_chirp,freq0))
+        # TTRef_tides = TaylorT3_ref_time_match(totalMass, chirpMass, freq0, TaylorF2_ref_time_guess(totalMass,chirpMass,freq0))
+        # TTRef_Iwd = TaylorT3_ref_time_match(1.2*wc.MSOLAR, m_chirp, freq0, TaylorF2_ref_time_guess(1.2*wc.MSOLAR,m_chirp,freq0))
 
         kv, _, _ = get_tensor_basis(phi, costh)  # TODO check intrinsic extrinsic separation here
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp, phi0, freq0, freqD, freqDD, 0, self.xis, self.TTs.size)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, TTRef, self.xis, self.TTs.size)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_tides, phi0, freq0, freqD_tides, freqDD_tides, TTRef_tides, self.xis, self.TTs.size)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_tides_Iwd, freqDD_tides_Iwd, TTRef_Iwd, self.xis, self.TTs.size)
+        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds,self.FTddds, amp, phi0, freq0, freqD, freqDD, freqDDD, 0, self.xis, self.TTs.size)
+        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, self.FTddds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, freqDDD_1PN,TTRef, self.xis, self.TTs.size)
+        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, self.FTddds,amp_tides, phi0, freq0, freqD_tides, freqDD_tides,freqDDD_tides, TTRef_tides, self.xis, self.TTs.size)
+        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, self.FTddds, amp_1PN, phi0, freq0, freqD_tides_Iwd, freqDD_tides_Iwd, freqDDD_tides_Iwd,TTRef_Iwd, self.xis, self.TTs.size)
 
     def update_extrinsic(self):
         """update the internal state for the extrinsic parts of the parameters"""
@@ -153,16 +158,18 @@ def TruthParamsCalculator(freq0, mass1, mass2, dl):
     chirpMass = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
     totalMass = mass1 + mass2
     eta = (chirpMass/totalMass)**(5/3)
+    fdot_pp = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3)
     #tides
     fdot_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))) )
     fddot_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (fdot_tides/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / chirpMass**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))**2))
     #1PN
     fdot = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*totalMass*freq0)**(2/3))
-    fddot = 96/5*np.pi**(8/3)*freq0**(8/3)*chirpMass**(5/3)*fdot * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*totalMass*freq0)**(2/3))
+    fddot = 96/5*np.pi**(8/3)*freq0**(8/3)*chirpMass**(5/3)*(fdot) * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*totalMass*freq0)**(2/3))
+    fdddot = (19/3) * ((fdot * fddot) / freq0) * ( 1 + ((2/19) * (fdot_pp / fdot) * (1 + ((13/3)*(fdot**2 / (freq0 * fddot)))) * (((743/1344)-(11*eta/16))*((8*np.pi*totalMass*freq0)**(2/3)))) )
 
     amp = np.pi**2/3 * chirpMass**(5/3) * freq0**(2/3) / dl
 
-    return fdot, fddot, fdot_tides, fddot_tides, amp, I_wd
+    return fdot, fddot, fdot_tides, fddot_tides, amp, I_wd, fdddot
 
 @njit()
 def ExtractAmpPhase_inplace(AET_Amps, AET_Phases, AET_FTs, AET_FTds, AA, PP, FT, FTd, RRs, IIs, dRRs, dIIs, NT):
@@ -255,15 +262,16 @@ def TaylorT3_ref_time_match(Mt,Mc,f_goal,t_guess):
     return TTRef
 
 @njit()
-def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS, Amp, phi0, FI, FD0, FDD0, TTRef, TS, NT):
+def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS, FDDDS, Amp, phi0, FI, FD0, FDD0, FDDD0, TTRef, TS, NT):
     """Get time domain waveform to lowest order, simple constant fdot"""
     # compute the intrinsic frequency, phase and amplitude
 
-    phiRef = -phi0-2*np.pi*FI*(-TTRef)-np.pi*FD0*(-TTRef)**2-(np.pi/3)*FDD0*(-TTRef)**3
+    phiRef = -phi0-2*np.pi*FI*(-TTRef)-np.pi*FD0*(-TTRef)**2-(np.pi/3)*FDD0*(-TTRef)**3-(np.pi/12)*FDDD0*(-TTRef)**4
     for n in range(0, NT):
         t = TS[n]
-        FS[n] = FI+FD0*(t-TTRef) + (1/2)*FDD0*(t-TTRef)**2
-        FDS[n] = FD0 + FDD0*(t-TTRef)
-        FDDS[n] = FDD0
-        PS[n] = -phiRef-2*np.pi*FI*(t-TTRef)-np.pi*FD0*(t-TTRef)**2-(np.pi/3)*FDD0*(t-TTRef)**3
+        FS[n] = FI+FD0*(t-TTRef) + (1/2)*FDD0*(t-TTRef)**2 + (1/6)*FDDD0*(t-TTRef)**3
+        FDS[n] = FD0 + FDD0*(t-TTRef) + (1/2)*FDDD0*(t-TTRef)**2
+        FDDS[n] = FDD0 + FDDD0*(t-TTRef)
+        FDDDS[n] = FDDD0
+        PS[n] = -phiRef-2*np.pi*FI*(t-TTRef)-np.pi*FD0*(t-TTRef)**2-(np.pi/3)*FDD0*(t-TTRef)**3 -(np.pi/12)*FDDD0*(t-TTRef)**4
         AS[n] = Amp

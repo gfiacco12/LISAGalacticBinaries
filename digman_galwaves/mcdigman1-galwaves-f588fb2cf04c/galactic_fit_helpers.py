@@ -28,7 +28,7 @@ def SAE_from_res(res, TobsYEAR, SAE_m):
     return SAE_got
 
 
-def SAE_from_file(TobsYEAR, SAE_m, gal_file='fit_gal_best_res.npy'):
+def SAE_from_file(TobsYEAR, SAE_m, gal_file='digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/fit_gal_best_res.npy'):
     """get appropriate SAE given model parameters in a file"""
     res = np.load(gal_file)
     return SAE_from_res(res, TobsYEAR, SAE_m)

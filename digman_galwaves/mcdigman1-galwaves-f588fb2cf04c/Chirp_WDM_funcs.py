@@ -28,7 +28,7 @@ def unpack_wavelets(NC, wave_in, lists_in, NUs):
     return wave
 
 
-@njit()
+# @njit()
 def wavemaket_multi_inplace(waveTs, Tlists, Phases, fas, fdas, Amps, NC, nt_range, force_nulls=False):
     """compute the actual wavelets using taylor time method
         inputs:
@@ -70,6 +70,7 @@ def wavemaket_multi_inplace(waveTs, Tlists, Phases, fas, fdas, Amps, NC, nt_rang
 
                 # highest frequency layer
                 kmax = min(wc.Nf-1, np.int64(np.floor((fa+HBW)/wc.DF)))
+
                 for k in range(kmin, kmax+1):
                     Tlists[itrc, mm] = j_ind*wc.Nf+k
 
