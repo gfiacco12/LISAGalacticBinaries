@@ -34,19 +34,19 @@ if __name__ == '__main__':
     # starting variables
     n_chain = 10                        # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin =8000                   # number of iterations to discard as burn in
+    n_burnin =40000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 20000                 # number of samples to store total
+    store_size = 150000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
     T_max = 1000.                      # maximum temperature for geometric part of temperature ladder
 
     sigma_prior_lim = 100.              # minimum standard deviations to allow around prior in amplitude, frequency, and frequency derivative
-    fdot, fddot, fdot_tides, fddot_tides, amp, Iwd, fdddot = rwt.TruthParamsCalculator(20.e-3, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR, (1*wc.KPCSEC)) #not log of DL
+    fdot, fddot, fdot_tides, fddot_tides, amp, Iwd, fdddot = rwt.TruthParamsCalculator(15.e-3, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR, (1*wc.KPCSEC)) #not log of DL
     print("FreqDDD", fdddot )
     print("Kappa", fdddot * (4*wc.SECSYEAR)**4 )
-    params_true = np.array([amp,  20.e-3, fdot, fddot, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6,  0.7*wc.MSOLAR, 0.6*wc.MSOLAR, Iwd, fdddot])  # true parameters for search -- Add in total mass and chirp mass
+    params_true = np.array([amp,  15.e-3, fdot, fddot, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6,  0.7*wc.MSOLAR, 0.6*wc.MSOLAR, Iwd, fdddot])  # true parameters for search -- Add in total mass and chirp mass
 
     # note that too many chains starting from the fiducial parameters can make the chain converge slower, if it fails to find secondary modes
     n_true_start = 4                   # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)

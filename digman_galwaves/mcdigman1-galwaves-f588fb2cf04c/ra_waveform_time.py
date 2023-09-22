@@ -131,11 +131,11 @@ class BinaryTimeWaveformAmpFreqD():
 
         kv, _, _ = get_tensor_basis(phi, costh)  # TODO check intrinsic extrinsic separation here
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds,self.FTddds, amp, phi0, freq0, freqD, freqDD, freqDDD, 0, self.xis, self.TTs.size)
+        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, self.FTddds ,amp, phi0, freq0, freqD, freqDD, freqDDD, 0, self.xis, self.TTs.size)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, self.FTddds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, freqDDD_1PN,TTRef, self.xis, self.TTs.size)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, self.FTddds,amp_tides, phi0, freq0, freqD_tides, freqDD_tides,freqDDD_tides, TTRef_tides, self.xis, self.TTs.size)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, self.FTddds, amp_1PN, phi0, freq0, freqD_tides_Iwd, freqDD_tides_Iwd, freqDDD_tides_Iwd,TTRef_Iwd, self.xis, self.TTs.size)
-
+#
     def update_extrinsic(self):
         """update the internal state for the extrinsic parts of the parameters"""
         # Calculate cos and sin of sky position, inclination, polarization
@@ -262,10 +262,10 @@ def TaylorT3_ref_time_match(Mt,Mc,f_goal,t_guess):
     return TTRef
 
 @njit()
-def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS, FDDDS, Amp, phi0, FI, FD0, FDD0, FDDD0, TTRef, TS, NT):
+def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS,FDDDS, Amp, phi0, FI, FD0, FDD0,FDDD0, TTRef, TS, NT):
     """Get time domain waveform to lowest order, simple constant fdot"""
     # compute the intrinsic frequency, phase and amplitude
-
+# , FDDD0
     phiRef = -phi0-2*np.pi*FI*(-TTRef)-np.pi*FD0*(-TTRef)**2-(np.pi/3)*FDD0*(-TTRef)**3-(np.pi/12)*FDDD0*(-TTRef)**4
     for n in range(0, NT):
         t = TS[n]

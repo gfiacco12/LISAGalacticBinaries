@@ -22,7 +22,7 @@ from ra_waveform_time import BinaryTimeWaveformAmpFreqD
 import ra_waveform_time as rwt
 
 fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-9, 1.e-9, 1.e-15, 1.e-43])
-
+#, 1.e-43
 
 def get_noisy_gb_likelihood(params_fid, noise_AET_dense, sigma_prior_lim, strategy_params):
     """get a likelihood object for a noisy signal
@@ -291,7 +291,7 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
 
 PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
 PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\gamma$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]", r'$I_{WD} [gcm^{2}]$', r"$\kappa$"] 
-
+#, r"$\kappa$"
 
 def get_param_labels():
     """get just the labels of the parameters"""

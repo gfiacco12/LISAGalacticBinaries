@@ -28,7 +28,7 @@ def unpack_wavelets(NC, wave_in, lists_in, NUs):
     return wave
 
 
-# @njit()
+@njit()
 def wavemaket_multi_inplace(waveTs, Tlists, Phases, fas, fdas, Amps, NC, nt_range, force_nulls=False):
     """compute the actual wavelets using taylor time method
         inputs:

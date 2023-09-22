@@ -190,7 +190,7 @@ def diagonal_dense_snr_helper(inv_chol_SAET, pixel_lists, wave_coeffs, NUs):
     return np.sqrt(snr2s)
 
 
-# @njit()
+@njit()
 def diagonal_dense_log_likelihood_helper(inv_chol_SAET, pixel_lists, wave_coeffs, NUs, wavelet_data_whitened):
     """calculate the reduced log likelihood for a wavelet object given input data matrix and a diagonal stationary input noise model
         inputs:
