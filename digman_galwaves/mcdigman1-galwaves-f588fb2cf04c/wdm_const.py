@@ -15,7 +15,7 @@ mode_select = 'GB'
 
 if mode_select == 'GB':
     n_years = 4
-    Nf = 2048         # frequency layers
+    Nf = 4096         # frequency layers
     Nt = 512*n_years
     dt = 1.00250244140625*n_years*15./(2*Nf*Nt/2048**2)  # time cadence
 

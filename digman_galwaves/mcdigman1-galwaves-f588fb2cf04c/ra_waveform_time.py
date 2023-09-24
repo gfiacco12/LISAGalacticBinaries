@@ -24,7 +24,6 @@ idx_psi = 11
 idx_mass1 = 12
 idx_mass2 = 13
 idx_iwd = 14
-idx_freqDDD = 15
 
 # TODO do consistency checks
 class BinaryTimeWaveformAmpFreqD():
@@ -54,7 +53,6 @@ class BinaryTimeWaveformAmpFreqD():
         self.FTs = np.zeros(self.NT)
         self.FTds = np.zeros(self.NT)
         self.FTdds = np.zeros(self.NT)
-        self.FTddds = np.zeros(self.NT)
 
         self.dRRs = np.zeros((wc.NC, self.NT))
         self.dIIs = np.zeros((wc.NC, self.NT))
@@ -93,7 +91,7 @@ class BinaryTimeWaveformAmpFreqD():
         freq0 = self.params[idx_freq0]
         freqD = self.params[idx_freqD]
         freqDD = self.params[idx_freqDD]
-        freqDDD = self.params[idx_freqDDD]
+        #freqDDD = self.params[idx_freqDDD]
         # cosi = self.params[idx_cosi]#np.cos(self.params[idx_incl])
         phi0 = self.params[idx_phi0]  # +np.pi
         # psi = self.params[idx_psi]
@@ -103,6 +101,8 @@ class BinaryTimeWaveformAmpFreqD():
         mass1 = self.params[idx_mass1]
         mass2 = self.params[idx_mass2]
         I_wd = self.params[idx_iwd]
+
+        freqDDD = (19/3) * ((freqD * freqDD) / freq0) 
 
         #physical model constants - 1PN
         # eta = (m_chirp/m_total)**(5/3)
@@ -131,10 +131,10 @@ class BinaryTimeWaveformAmpFreqD():
 
         kv, _, _ = get_tensor_basis(phi, costh)  # TODO check intrinsic extrinsic separation here
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, self.FTddds ,amp, phi0, freq0, freqD, freqDD, freqDDD, 0, self.xis, self.TTs.size)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, self.FTddds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, freqDDD_1PN,TTRef, self.xis, self.TTs.size)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, self.FTddds,amp_tides, phi0, freq0, freqD_tides, freqDD_tides,freqDDD_tides, TTRef_tides, self.xis, self.TTs.size)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, self.FTddds, amp_1PN, phi0, freq0, freqD_tides_Iwd, freqDD_tides_Iwd, freqDDD_tides_Iwd,TTRef_Iwd, self.xis, self.TTs.size)
+        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds ,amp, phi0, freq0, freqD, freqDD, freqDDD, 0, self.xis, self.TTs.size)
+        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, freqDDD_1PN,TTRef, self.xis, self.TTs.size)
+        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds,amp_tides, phi0, freq0, freqD_tides, freqDD_tides,freqDDD_tides, TTRef_tides, self.xis, self.TTs.size)
+        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_tides_Iwd, freqDD_tides_Iwd, freqDDD_tides_Iwd,TTRef_Iwd, self.xis, self.TTs.size)
 #
     def update_extrinsic(self):
         """update the internal state for the extrinsic parts of the parameters"""
@@ -262,7 +262,7 @@ def TaylorT3_ref_time_match(Mt,Mc,f_goal,t_guess):
     return TTRef
 
 @njit()
-def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS,FDDDS, Amp, phi0, FI, FD0, FDD0,FDDD0, TTRef, TS, NT):
+def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS, Amp, phi0, FI, FD0, FDD0, FDDD0, TTRef, TS, NT):
     """Get time domain waveform to lowest order, simple constant fdot"""
     # compute the intrinsic frequency, phase and amplitude
 # , FDDD0
@@ -272,6 +272,5 @@ def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS,FDDDS, Amp, phi0, FI, FD0, FDD0,F
         FS[n] = FI+FD0*(t-TTRef) + (1/2)*FDD0*(t-TTRef)**2 + (1/6)*FDDD0*(t-TTRef)**3
         FDS[n] = FD0 + FDD0*(t-TTRef) + (1/2)*FDDD0*(t-TTRef)**2
         FDDS[n] = FDD0 + FDDD0*(t-TTRef)
-        FDDDS[n] = FDDD0
         PS[n] = -phiRef-2*np.pi*FI*(t-TTRef)-np.pi*FD0*(t-TTRef)**2-(np.pi/3)*FDD0*(t-TTRef)**3 -(np.pi/12)*FDDD0*(t-TTRef)**4
         AS[n] = Amp
