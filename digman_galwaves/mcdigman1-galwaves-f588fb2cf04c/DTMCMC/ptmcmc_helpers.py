@@ -244,7 +244,7 @@ def advance_step_ptmcmc(itrb, samples, logLs, T_ladder, accept_record, proposal_
             # if the point passes, get the likelihood
             logL_new = like_obj.get_loglike(new_point)       # get the likelihood
         else:
-            logL_new = -np.inf                               # if the point failed, just set the likelihood to negative infinity so it won't be accepted
+            logL_new = -np.inf                                 # if the point failed, just set the likelihood to negative infinity so it won't be accepted
 
         test = np.log(np.random.uniform(0., 1.))             # get the test draw to determine if we accept the point
         if betas[itrt]*(logL_new-logLs[itrb-1, itrt])+density_fac > test:
