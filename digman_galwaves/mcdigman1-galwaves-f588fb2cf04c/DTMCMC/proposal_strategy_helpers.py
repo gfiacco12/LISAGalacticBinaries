@@ -11,8 +11,8 @@ class ProposalStrategyParameters():
                  cold_prior_weight=1./3.,           # how often to do prior draws in the cold chains
                  cold_de_weight=1./3.,              # how often to do de draws in the cold chains
                  hot_de_weight=1./3.,               # how often to do de draws in the hottest finite temperature chain
-                 cold_fisher_weight=1./3.,          # how often to do fisher draws in the cold chains
-                 hot_fisher_weight=1./3.,           # how often to do fisher draws in the hottest finite temperature chain
+                 cold_fisher_weight=0.,          # how often to do fisher draws in the cold chains
+                 hot_fisher_weight=0.,           # how often to do fisher draws in the hottest finite temperature chain
                  hot_prior_target_weight=1./3.,     # how often to do prior draws in the hottest finite temperature chain
                  big_de_prob=0.5,                   # how often to do the big differential evolution jump
                  de_subspace_frac=1.,               # what fraction of dimensions to include in de subspace jumps

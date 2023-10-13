@@ -101,22 +101,23 @@ class BinaryTimeWaveformAmpFreqD():
         freqDDD = (19/3) * ((freqD * freqDD) / freq0) 
 
         #define mass parameterizations
-        # eta = (m_chirp/m_total)**(5/3)
-        # dm = (1-(4*eta))**(1/2)
-        # mass1 = m_total * (1 + dm) / 2
-        # mass2 = m_total * (1 - dm) / 2
+        eta = (m_chirp/m_total)**(5/3)
+        dm = (1-(4*eta))**(1/2)
+        mass1 = m_total * (1 + dm) / 2
+        mass2 = m_total * (1 - dm) / 2
         amp_1PN = np.pi**(2/3) * m_chirp**(5/3) * freq0**(2/3) / dl
+        fdot_pp = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3)
+        I_orb = m_chirp**(5/3) / ((np.pi*freq0)**(4/3))
 
         #physical model constants - 1PN
-        # fdot_pp = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3)
         # freqD_1PN = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*m_total*freq0)**(2/3))
         # freqDD_1PN = 96/5*np.pi**(8/3)*freq0**(8/3)*m_chirp**(5/3)*freqD_1PN * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*m_total*freq0)**(2/3))
         # freqDDD_1PN = (19/3) * ((freqD_1PN * freqDD_1PN) / freq0) * ( 1 + (2/19) * (fdot_pp / freqD_1PN) * (1 + ((13/3)*(freqD_1PN**2 / (freq0 * freqDD_1PN)))) * (((743/1344)-(11*eta/16))*((8*np.pi*m_total*freq0)**(2/3))) )
         
         # #physical model - tides
-        #I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
+        I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
         freqD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))) )
-        freqDD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (freqD_tides/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / m_chirp**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))**2))
+        freqDD_tides = (11/3)*(fdot_pp**2/freq0 ) * ( 1 + (((26/11)*(3*I_wd/I_orb)) / (1 - (3*I_wd/I_orb))) + ( (19/11) * ((3*I_wd/I_orb) / (1 - (3*I_wd/I_orb)))**2 ))
         freqDDD_tides = (19/3) * ((freqD_tides * freqDD_tides) / freq0) 
 
         # #physical model - tides, Moment of Inertia, Chirp Mass
@@ -132,7 +133,7 @@ class BinaryTimeWaveformAmpFreqD():
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds ,amp, phi0, freq0, freqD, freqDD, freqDDD, 0, self.xis, self.TTs.size)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, freqDDD_1PN,TTRef, self.xis, self.TTs.size)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_tides, freqDD_tides, freqDDD_tides, TTRef_Iwd, self.xis, self.TTs.size)
+        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_tides, freqDD_tides, freqDDD_tides, 0, self.xis, self.TTs.size)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_tides_Iwd, freqDD_tides_Iwd, freqDDD_tides_Iwd, TTRef_Iwd, self.xis, self.TTs.size)
 #
     def update_extrinsic(self):
@@ -157,10 +158,11 @@ def TruthParamsCalculator(freq0, mass1, mass2, dl):
     chirpMass = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
     totalMass = mass1 + mass2
     eta = (chirpMass/totalMass)**(5/3)
+    I_orb = chirpMass**(5/3) / ((np.pi*freq0)**(4/3))
     fdot_pp = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3)
     #tides
     fdot_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))) )
-    fddot_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (fdot_tides/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / chirpMass**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))**2))
+    fddot_tides = (11/3)*(fdot_pp**2/freq0 ) * ( 1 + (((26/11)*(3*I_wd/I_orb)) / (1 - (3*I_wd/I_orb))) + ( (19/11) * ((3*I_wd/I_orb) / (1 - (3*I_wd/I_orb)))**2 ))
     #1PN
     fdot = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*totalMass*freq0)**(2/3))
     fddot = 96/5*np.pi**(8/3)*freq0**(8/3)*chirpMass**(5/3)*(fdot) * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*totalMass*freq0)**(2/3))

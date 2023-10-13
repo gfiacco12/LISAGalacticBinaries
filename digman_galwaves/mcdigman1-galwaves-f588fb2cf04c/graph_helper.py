@@ -18,10 +18,10 @@ def makeScatterPlot(data_x, data_y):
     plt.show()
     return
 
-def plotAutoCorrelationLength(data, lags):
+def plotAutoCorrelationLength(data, lags, param_name):
     plt.figure()
     tsaplots.plot_acf(data, lags=lags)
-    plt.title("Autocorrelation of data")
+    plt.title("Autocorrelation of %s" % param_name)
     plt.xlabel("h")
     plt.ylabel("Correlation Coefficient")
     plt.show()

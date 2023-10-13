@@ -68,6 +68,7 @@ def get_gb_likelihood(params_fid, data_use, fwt, noise_AET_dense, sigma_prior_li
     # get the sigmas we will use to define the prior ranges
     sigma_diag_array, _, _ = set_fishers(np.array([params_fid.copy()]), strategy_params, 1, like_obj_temp)
     sigma_diags = sigma_diag_array[0]
+    # sigma_diags[-1] = 1.e-3 * params_fid[-1]
 
     # get the prior ranges
     low_lims, high_lims = create_prior_model(params_fid, sigma_diags, sigma_prior_lim)
@@ -76,7 +77,7 @@ def get_gb_likelihood(params_fid, data_use, fwt, noise_AET_dense, sigma_prior_li
     like_obj_temp.low_lims = low_lims
     like_obj_temp.high_lims = high_lims
     like_obj_temp.sigmas_in = sigma_diags
-
+    #print(sigma_diags)
     return like_obj_temp
 
 
@@ -125,6 +126,8 @@ class GalacticBinaryLikelihood(Likelihood):
         """get the log likelihood given a set of parameters params_in"""
         assert self.check_bounds(params_in)
         self.update_internal(params_in)
+        if np.sum(self.NUTs) == 0:
+            return -np.inf
         return diagonal_dense_log_likelihood_helper(self.inv_chol_SAET, self.Tlists, self.waveT, self.NUTs, self.data_use)
 
     def get_snr(self, params_in):
@@ -237,7 +240,7 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     # the frequency second derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
     low_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]-2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
     high_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]+2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
-   
+    
     # make sure initial frequency has at least a few possible characteristic modes at 1/year spacing included
     # but also isn't crossing multiple frequency pixels
     # and if both of those constraints are satisfied then do sigma boundaries
@@ -275,9 +278,8 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     high_lims[rwt.idx_mtotal] = params_fid[rwt.idx_mtotal]+2*sigma_prior_lim*sigmas[rwt.idx_mtotal]
 
     #moment of inertia priors (in s)
-    low_lims[rwt.idx_iwd] = max(params_fid[rwt.idx_iwd]-2*sigma_prior_lim*sigmas[rwt.idx_iwd], 0)
-    high_lims[rwt.idx_iwd] = params_fid[rwt.idx_iwd]+2*sigma_prior_lim*sigmas[rwt.idx_iwd]
-
+    low_lims[rwt.idx_iwd] = 0.5*params_fid[rwt.idx_iwd]
+    high_lims[rwt.idx_iwd] = 1.5*params_fid[rwt.idx_iwd]
 
     return low_lims, high_lims
 

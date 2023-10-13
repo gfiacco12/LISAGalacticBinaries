@@ -26,17 +26,19 @@ import ra_waveform_time as rwt
 from instrument_noise import get_galactic_novar_noise_model
 import wdm_const as wc 
 from graph_helper import *
+from ra_waveform_time import BinaryTimeWaveformAmpFreqD
+
 
 
 if __name__ == '__main__':
     t0 = perf_counter()
 
     # starting variables
-    n_chain = 10                        # number of total chains for parallel tempering
+    n_chain = 20                     # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
     n_burnin =10000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 40000                 # number of samples to store total
+    store_size = 30000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
@@ -58,9 +60,35 @@ if __name__ == '__main__':
 
     like_obj = trial_likelihood.get_noiseless_gb_likelihood(params_true.copy(), noise_AET_dense, sigma_prior_lim, strategy_params)  # get the likelihood object
     params_true = like_obj.correct_bounds(params_true)                 # make sure the conventions on the parameters match
-    
+    print(like_obj.sigmas_in)
     logL_truths = like_obj.get_loglike(params_true)
     print("Log Likelihoods of truth parameters:", logL_truths)
+    # for idx in [rwt.idx_mchirp, rwt.idx_iwd]:
+    #     _params = params_true.copy()
+    #     _params[idx] += like_obj.sigmas_in[idx]
+    #     _logL = like_obj.get_loglike(_params)
+    #     print("Log like for phys model", _logL)
+
+    # # #check waveform models
+    # fwt = BinaryTimeWaveformAmpFreqD(params_true.copy(), 0, wc.Nt)
+    # data = fwt.AET_FTs[0,:]
+    # times = fwt.TTs
+    # np.savetxt('AET_FTs_massmodelv2.txt', data)
+    # np.savetxt('times.txt', times)
+
+    #check fractional errors:
+    # dfreqD = like_obj.sigmas_in[2] / params_true[2]
+    # dfreqDD = like_obj.sigmas_in[3] / params_true[3]
+    # dMc = like_obj.sigmas_in[6] / params_true[6]
+    # dIwd = like_obj.sigmas_in[12] / params_true[12]
+    # print("Fractional errors: Fdot=", dfreqD, "Fddot=", dfreqDD, "Mchirp=", dMc, "Iwd=", dIwd)
+
+    # #check fractional prior ranges
+    # prior_freqD = (like_obj.high_lims[2]-like_obj.low_lims[2])/params_true[2]
+    # prior_freqDD = (like_obj.high_lims[3]-like_obj.low_lims[3])/params_true[3]
+    # prior_Mc = (like_obj.high_lims[6]-like_obj.low_lims[6])/params_true[6]
+    # prior_Iwd = (like_obj.high_lims[12]-like_obj.low_lims[12])/params_true[12]
+    # print("Fractional priors: Fdot=", prior_freqD, "Fddot=", prior_freqDD, "Mchirp=", prior_Mc, "Iwd=", prior_Iwd)
 
     # create the starting samples
     starting_samples = np.zeros((T_ladder.n_chain, like_obj.n_par))
@@ -68,10 +96,11 @@ if __name__ == '__main__':
         if itrt < n_true_start:
             # use the true value
             starting_samples[itrt] = params_true
+            print(like_obj.get_loglike(starting_samples[itrt]))
         else:
             # use a prior draw
             starting_samples[itrt] = like_obj.prior_draw()
-
+    
     # create the overarching proposal manager object
     proposal_manager = get_default_proposal_manager(T_ladder, like_obj, strategy_params, starting_samples)
 
@@ -96,18 +125,22 @@ if __name__ == '__main__':
     corr_sum = CorrelationSummary()
     corr_sum.summarize_blocks(mcc, n_burnin)
     corr_sum.final_prints(mcc, n_burnin)
-    print("sigma scales:", mcc.proposal_manager.managers[0].sigma_scales)
+    #print("sigma scales:", mcc.proposal_manager.managers[0].sigma_scales)
     # get flattened samples for plotting
     samples_flattened, logLs_flattened, logLs_unflattened = mcc.get_stored_flattened(corr_sum.restrict_n_burnin(mcc, n_burnin)) 
    
     #makeHistogramofLogLike(logLs_flattened)
 
-    #makeScatterPlot(logLs_flattened, samples_flattened[:,1])
+    #makeScatterPlot(logLs_flattened, samples_flattened[:,6])
     #iteration_number = np.linspace(0, store_size, len(logLs_flattened))
     # print(mcc.logL_means)
-    # plotChains(mcc.logL_means)
+    #plotChains(mcc.logL_means)
 
-    #plotAutoCorrelationLength(samples_flattened[:,2], 1000)
+    #plt.semilogx(T_ladder.Ts,mcc.logL_vars[-1]*T_ladder.betas**2)
+
+    # plotAutoCorrelationLength(samples_flattened[:,1], 1000, "Freq0")
+    # plotAutoCorrelationLength(samples_flattened[:,6], 1000, "Mchirp")
+    # plotAutoCorrelationLength(samples_flattened[:,12], 1000, "Iwd")
 
     tf = perf_counter()
 
@@ -119,7 +152,7 @@ if do_corner_plot:
     import matplotlib.pyplot as plt
     import corner
     # reformat the samples to make the plots look nicer
-    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_logdl, rwt.idx_freq0, rwt.idx_mchirp, rwt.idx_iwd])
+    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_logdl, rwt.idx_freq0, rwt.idx_mchirp, rwt.idx_mtotal])
     # create the corner plot figure
     fig = plt.figure(figsize=(10, 7.5))
     figure = corner.corner(samples_format, fig=fig, bins=25, hist_kwargs={"density": True}, show_titles=True, title_fmt=None,
