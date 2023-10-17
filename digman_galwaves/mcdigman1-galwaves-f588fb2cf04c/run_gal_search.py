@@ -47,7 +47,7 @@ if __name__ == '__main__':
     sigma_prior_lim = 100.              # minimum standard deviations to allow around prior in amplitude, frequency, and frequency derivative
     fdot, fddot, fdot_tides, fddot_tides, amp, Iwd, fdddot = rwt.TruthParamsCalculator(15.e-3, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR, (1*wc.KPCSEC)) #not log of DL
 
-    params_true = np.array([amp,  15.e-3, fdot_tides, fddot_tides, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6, Iwd])  # true parameters for search -- Add in total mass and chirp mass
+    params_true = np.array([amp,  15.e-3, fdot_tides, fddot_tides, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6, Iwd, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR])  # true parameters for search -- Add in total mass and chirp mass
 
     # note that too many chains starting from the fiducial parameters can make the chain converge slower, if it fails to find secondary modes
     n_true_start = 4              # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)
@@ -63,11 +63,11 @@ if __name__ == '__main__':
     print(like_obj.sigmas_in)
     logL_truths = like_obj.get_loglike(params_true)
     print("Log Likelihoods of truth parameters:", logL_truths)
-    # for idx in [rwt.idx_mchirp, rwt.idx_iwd]:
-    #     _params = params_true.copy()
-    #     _params[idx] += like_obj.sigmas_in[idx]
-    #     _logL = like_obj.get_loglike(_params)
-    #     print("Log like for phys model", _logL)
+    for idx in [rwt.idx_m1, rwt.idx_m2]:
+        _params = params_true.copy()
+        _params[idx] += like_obj.sigmas_in[idx]
+        _logL = like_obj.get_loglike(_params)
+        print("Log like for phys model", _logL)
 
     # # #check waveform models
     # fwt = BinaryTimeWaveformAmpFreqD(params_true.copy(), 0, wc.Nt)
@@ -128,7 +128,8 @@ if __name__ == '__main__':
     #print("sigma scales:", mcc.proposal_manager.managers[0].sigma_scales)
     # get flattened samples for plotting
     samples_flattened, logLs_flattened, logLs_unflattened = mcc.get_stored_flattened(corr_sum.restrict_n_burnin(mcc, n_burnin)) 
-   
+    print(samples_flattened[0:30,12])
+    print(samples_flattened[0:30,13])
     #makeHistogramofLogLike(logLs_flattened)
 
     #makeScatterPlot(logLs_flattened, samples_flattened[:,6])
@@ -152,7 +153,7 @@ if do_corner_plot:
     import matplotlib.pyplot as plt
     import corner
     # reformat the samples to make the plots look nicer
-    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_logdl, rwt.idx_freq0, rwt.idx_mchirp, rwt.idx_mtotal])
+    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_logdl, rwt.idx_freq0, rwt.idx_m1, rwt.idx_m2])
     # create the corner plot figure
     fig = plt.figure(figsize=(10, 7.5))
     figure = corner.corner(samples_format, fig=fig, bins=25, hist_kwargs={"density": True}, show_titles=True, title_fmt=None,

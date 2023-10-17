@@ -21,7 +21,7 @@ import mcmc_params as mcp
 from ra_waveform_time import BinaryTimeWaveformAmpFreqD
 import ra_waveform_time as rwt
 
-fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-15])
+fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-15,1.e-9,1.e-9])
 #, 1.e-43
 
 def get_noisy_gb_likelihood(params_fid, noise_AET_dense, sigma_prior_lim, strategy_params):
@@ -57,7 +57,7 @@ def get_gb_likelihood(params_fid, data_use, fwt, noise_AET_dense, sigma_prior_li
     """get a likelihood object for galactic binaries given input data"""
     print("getting gb likelihood")
     n_par = params_fid.size
-    sigmas_in = np.zeros(n_par)+strategy_params.sigma_default
+    sigmas_in = np.zeros(n_par)+ strategy_params.sigma_default
     epsilons = fisher_eps_default
 
     low_lims, high_lims = create_prior_model(params_fid, sigmas_in, sigma_prior_lim)  # generate prior model with default sigmas, will refine later
@@ -281,11 +281,19 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     low_lims[rwt.idx_iwd] = 0.5*params_fid[rwt.idx_iwd]
     high_lims[rwt.idx_iwd] = 1.5*params_fid[rwt.idx_iwd]
 
+    #mass1
+    low_lims[rwt.idx_m1] = max(params_fid[rwt.idx_m1]-2*sigma_prior_lim*1.e3*sigmas[rwt.idx_m1], 0)
+    high_lims[rwt.idx_m1] = params_fid[rwt.idx_m1]+2*sigma_prior_lim*sigmas[rwt.idx_m1]
+
+    #mass2
+    low_lims[rwt.idx_m2] = max(params_fid[rwt.idx_m2]-2*sigma_prior_lim*1.e3*sigmas[rwt.idx_m2], 0)
+    high_lims[rwt.idx_m2] = params_fid[rwt.idx_m2]+2*sigma_prior_lim*sigmas[rwt.idx_m2]
+
     return low_lims, high_lims
 
 
 PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
-PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\gamma$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r'$I_{WD} [gcm^{2}]$'] 
+PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\gamma$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r'$I_{WD} [gcm^{2}]$', r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
 #, r"$\kappa$"
 
 def get_param_labels():
@@ -341,6 +349,12 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         elif (i == rwt.idx_iwd):
             samples_got[:, rwt.idx_iwd] /= wc.IWDtoSEC                 # Convert to cgs
             params_fid_got[rwt.idx_iwd] /= wc.IWDtoSEC
+        elif (i == rwt.idx_m1):
+            samples_got[:, rwt.idx_m1] /= wc.MSOLAR
+            params_fid_got[rwt.idx_m1] /= wc.MSOLAR
+        elif (i == rwt.idx_m2):
+            samples_got[:, rwt.idx_m2] /= wc.MSOLAR
+            params_fid_got[rwt.idx_m2] /= wc.MSOLAR
         
         labels.append(label)
         params_fin.append(params_fid_got[i])
