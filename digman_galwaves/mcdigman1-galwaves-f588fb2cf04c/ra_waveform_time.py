@@ -10,9 +10,9 @@ from algebra_tools import gradient_homog_2d_inplace
 from scipy.optimize import fsolve
 
 idx_amp = 0
-idx_freq0 = 1
-idx_freqD = 2
-idx_freqDD = 3
+idx_alpha = 1   #idx_freq0 = 1   
+idx_beta = 2    #idx_freqD = 2   
+idx_delta = 3   #idx_freqDD = 3  
 idx_logdl = 4
 idx_mtotal = 5
 idx_mchirp = 6
@@ -88,10 +88,9 @@ class BinaryTimeWaveformAmpFreqD():
         amp = self.params[idx_amp]
         costh = self.params[idx_costh]  # np.cos(np.pi/2-self.params[idx_theta] )
         phi = self.params[idx_phi]
-        freq0 = self.params[idx_freq0]
-        freqD = self.params[idx_freqD]
-        freqDD = self.params[idx_freqDD]
-        #freqDDD = self.params[idx_freqDDD]
+        alpha = self.params[idx_alpha]#freq0 = self.params[idx_freq0]  #
+        beta = self.params[idx_beta]#freqD = self.params[idx_freqD]  #
+        delta = self.params[idx_delta]#freqDD = self.params[idx_freqDD]    #
         # cosi = self.params[idx_cosi]#np.cos(self.params[idx_incl])
         phi0 = self.params[idx_phi0]  # +np.pi
         # psi = self.params[idx_psi]
@@ -102,17 +101,19 @@ class BinaryTimeWaveformAmpFreqD():
         mass1 = self.params[idx_m1]
         mass2 = self.params[idx_m2]
 
-        freqDDD = (19/3) * ((freqD * freqDD) / freq0) 
-
+        #freqDDD = (19/3) * ((freqD * freqDD) / freq0) 
+        gamma = delta + (11/3)*(beta**2 / alpha)
+        kappa = (19/3) * ((beta * gamma) / alpha)
+        t_obs = 4*wc.SECSYEAR
         #define mass parameterizations
        # eta = (m_chirp/m_total)**(5/3)
         #dm = (1-(4*eta))**(1/2)
         # mass1 = m_total * (1 + dm) / 2
         # mass2 = m_total * (1 - dm) / 2
-        chirpMass = (mass1 * mass2)**(3/5) / (mass1 + mass2)**(1/5)
-        amp_1PN = np.pi**(2/3) * chirpMass**(5/3) * freq0**(2/3) / dl
-        fdot_pp = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3)
-        I_orb = chirpMass**(5/3) / ((np.pi*freq0)**(4/3))
+        # chirpMass = (mass1 * mass2)**(3/5) / (mass1 + mass2)**(1/5)
+        # amp_1PN = np.pi**(2/3) * chirpMass**(5/3) * freq0**(2/3) / dl
+        # fdot_pp = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3)
+        # I_orb = chirpMass**(5/3) / ((np.pi*freq0)**(4/3))
 
         #physical model constants - 1PN
         # freqD_1PN = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*m_total*freq0)**(2/3))
@@ -120,16 +121,17 @@ class BinaryTimeWaveformAmpFreqD():
         # freqDDD_1PN = (19/3) * ((freqD_1PN * freqDD_1PN) / freq0) * ( 1 + (2/19) * (fdot_pp / freqD_1PN) * (1 + ((13/3)*(freqD_1PN**2 / (freq0 * freqDD_1PN)))) * (((743/1344)-(11*eta/16))*((8*np.pi*m_total*freq0)**(2/3))) )
         
         # #physical model - tides
-        I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
-        freqD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))) )
-        freqDD_tides = (11/3)*(fdot_pp**2/freq0 ) * ( 1 + (((26/11)*(3*I_wd/I_orb)) / (1 - (3*I_wd/I_orb))) + ( (19/11) * ((3*I_wd/I_orb) / (1 - (3*I_wd/I_orb)))**2 ))
-        freqDDD_tides = (19/3) * ((freqD_tides * freqDD_tides) / freq0) 
+        # I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
+        # freqD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))) )
+        # freqDD_tides = (11/3)*(fdot_pp**2/freq0 ) * ( 1 + (((26/11)*(3*I_wd/I_orb)) / (1 - (3*I_wd/I_orb))) + ( (19/11) * ((3*I_wd/I_orb) / (1 - (3*I_wd/I_orb)))**2 ))
+        # freqDDD_tides = (19/3) * ((freqD_tides * freqDD_tides) / freq0) 
 
         kv, _, _ = get_tensor_basis(phi, costh)  # TODO check intrinsic extrinsic separation here
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds ,amp, phi0, freq0, freqD, freqDD, freqDDD, 0, self.xis, self.TTs.size)
+        AmpFreqDeriv_inplace_v2(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds ,amp, phi0, alpha, beta, gamma, kappa, 0, self.xis, self.TTs.size, t_obs)
         #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, freqDDD_1PN,TTRef, self.xis, self.TTs.size)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_tides, freqDD_tides, freqDDD_tides, 0, self.xis, self.TTs.size)
+        # AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_tides, freqDD_tides, freqDDD_tides, 0, self.xis, self.TTs.size)
 
     def update_extrinsic(self):
         """update the internal state for the extrinsic parts of the parameters"""
@@ -147,7 +149,7 @@ class BinaryTimeWaveformAmpFreqD():
         ExtractAmpPhase_inplace(self.AET_AmpTs, self.AET_PPTs, self.AET_FTs, self.AET_FTds,
                                 self.AmpTs, self.PPTs, self.FTs, self.FTds, self.RRs, self.IIs, self.dRRs, self.dIIs, self.NT)
 
-def TruthParamsCalculator(freq0, mass1, mass2, dl):
+def TruthParamsCalculator(freq0, mass1, mass2, dl, tobs):
     #calculate frequencies using physical models and input them as truth params for the code
     I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) ) # this is in s^3
     chirpMass = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
@@ -165,7 +167,12 @@ def TruthParamsCalculator(freq0, mass1, mass2, dl):
 
     amp = np.pi**(2/3) * chirpMass**(5/3) * freq0**(2/3) / dl
 
-    return fdot, fddot, fdot_tides, fddot_tides, amp, I_wd, fdddot
+    #alpha beta gamma calculations
+    alpha = freq0 * tobs
+    beta = fddot_tides * (tobs**2)
+    gamma = fddot_tides * (tobs**3)
+    delta = gamma - (11/3)*(beta**2 / alpha)
+    return fdot, fddot, fdot_tides, fddot_tides, amp, I_wd, alpha, beta, delta
 
 @njit()
 def ExtractAmpPhase_inplace(AET_Amps, AET_Phases, AET_FTs, AET_FTds, AA, PP, FT, FTd, RRs, IIs, dRRs, dIIs, NT):
@@ -269,4 +276,19 @@ def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS, Amp, phi0, FI, FD0, FDD0, FDDD0,
         FDS[n] = FD0 + FDD0*(t-TTRef) + (1/2)*FDDD0*(t-TTRef)**2
         FDDS[n] = FDD0 + FDDD0*(t-TTRef)
         PS[n] = -phiRef-2*np.pi*FI*(t-TTRef)-np.pi*FD0*(t-TTRef)**2-(np.pi/3)*FDD0*(t-TTRef)**3 -(np.pi/12)*FDDD0*(t-TTRef)**4
+        AS[n] = Amp
+
+@njit()
+#parameterized in terms of alpha beta gamma
+def AmpFreqDeriv_inplace_v2(AS, PS, FS, FDS, FDDS, Amp, phi0, ALPHA, BETA, GAMMA, KAPPA, TTRef, TS, NT, T_obs):
+    """Get time domain waveform to lowest order, simple constant fdot"""
+    # compute the intrinsic frequency, phase and amplitude
+# , FDDD0
+    phiRef = -phi0 - 2*np.pi*(ALPHA / T_obs)*(-TTRef) - np.pi*(BETA /(T_obs**2))*(-TTRef)**2 - (np.pi/3)*(GAMMA/(T_obs**3))*(-TTRef)**3 - (np.pi/12)*(KAPPA/(T_obs**4))*(-TTRef)**4
+    for n in range(0, NT):
+        t = TS[n]
+        FS[n] = (ALPHA / T_obs) + (BETA /(T_obs**2))*(t-TTRef) + (1/2)*(GAMMA/(T_obs**3))*(t-TTRef)**2 + (1/6)*(KAPPA/(T_obs**4))*(t-TTRef)**3
+        FDS[n] = (BETA /(T_obs**2)) + (GAMMA/(T_obs**3))*(t-TTRef) + (1/2)*(KAPPA/(T_obs**4))*(t-TTRef)**2
+        FDDS[n] = (GAMMA/(T_obs**3)) + (KAPPA/(T_obs**4))*(t-TTRef)
+        PS[n] = -phiRef - 2*np.pi*(ALPHA / T_obs)*(t-TTRef) - np.pi*(BETA /(T_obs**2))*(t-TTRef)**2 - (np.pi/3)*(GAMMA/(T_obs**3))*(t-TTRef)**3 - (np.pi/12)*(KAPPA/(T_obs**4))*(t-TTRef)**4
         AS[n] = Amp

@@ -45,10 +45,10 @@ if __name__ == '__main__':
     T_max = 20.                      # maximum temperature for geometric part of temperature ladder
 
     sigma_prior_lim = 100.              # minimum standard deviations to allow around prior in amplitude, frequency, and frequency derivative
-    fdot, fddot, fdot_tides, fddot_tides, amp, Iwd, fdddot = rwt.TruthParamsCalculator(15.e-3, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR, (1*wc.KPCSEC)) #not log of DL
+    fdot, fddot, fdot_tides, fddot_tides, amp, Iwd, alpha, beta, delta = rwt.TruthParamsCalculator(15.e-3, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR, (1*wc.KPCSEC), (4*wc.SECSYEAR)) #not log of DL
 
-    params_true = np.array([amp,  15.e-3, fdot_tides, fddot_tides, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6, Iwd, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR])  # true parameters for search -- Add in total mass and chirp mass
-
+    params_true = np.array([amp, alpha, beta, delta, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6, Iwd, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR])  # true parameters for search -- Add in total mass and chirp mass
+    print(alpha, beta, delta)
     # note that too many chains starting from the fiducial parameters can make the chain converge slower, if it fails to find secondary modes
     n_true_start = 4              # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)
 
@@ -63,17 +63,37 @@ if __name__ == '__main__':
     print(like_obj.sigmas_in)
     logL_truths = like_obj.get_loglike(params_true)
     print("Log Likelihoods of truth parameters:", logL_truths)
-    for idx in [rwt.idx_m1, rwt.idx_m2]:
-        _params = params_true.copy()
-        _params[idx] += like_obj.sigmas_in[idx]
-        _logL = like_obj.get_loglike(_params)
-        print("Log like for phys model", _logL)
+    # for idx in [rwt.idx_m1, rwt.idx_m2]:
+    #     _param = params_true.copy()
+    #     _param[rwt.idx_m1] += 0.639217
+    #     _param[rwt.idx_m2] += 0.769018
+    #     _LogL = like_obj.get_loglike(_param)
+    #     print("Log like for (m1,m2)=(0.8, 0.53) model", _LogL)
+    # print("New mass1, mass2 =", _param[rwt.idx_m1]/wc.MSOLAR, _param[rwt.idx_m2]/wc.MSOLAR)
 
+
+    # for idx in [rwt.idx_m1, rwt.idx_m2]:
+    #     _params = params_true.copy()
+    #     _params[idx] += like_obj.sigmas_in[idx]
+    #     _logL = like_obj.get_loglike(_params)
+    #     print("Log like for phys model", _logL)
+
+    #fractional change in fD, fDD, Iwd
+    # fdot_pp = 96/5*np.pi**(8/3)*params_true[1]**(11/3)*params_true[6]**(5/3)
+    # I_orb = params_true[6]**(5/3) / ((np.pi*params_true[1])**(4/3))
+    # I_wd = 8.51e-10 * ( (params_true[13]/(0.6*wc.MSOLAR))**(1/3) + (params_true[14]/(0.6*wc.MSOLAR))**(1/3) )
+    # freqD_tides = 96/5*np.pi**(8/3)*params_true[1]**(11/3)*params_true[6]**(5/3) * (1 + ((3*I_wd*(np.pi*params_true[1])**(4/3)/params_true[6]**(5/3)) / (1 - (3*I_wd*(np.pi*params_true[1])**(4/3)/params_true[6]**(5/3)))) )
+    # freqDD_tides = (11/3)*(fdot_pp**2/params_true[1] ) * ( 1 + (((26/11)*(3*I_wd/I_orb)) / (1 - (3*I_wd/I_orb))) + ( (19/11) * ((3*I_wd/I_orb) / (1 - (3*I_wd/I_orb)))**2 ))
+    
+    # deltafD = (freqD_tides - params_true[2]) / params_true[2]
+    # deltafDD = (freqDD_tides - params_true[3] ) / params_true[3] 
+    # deltaIwd = ( I_wd - params_true[12]) / params_true[12]
+    # print("Fractional Change in FD, FDD, Iwd:", deltafD, deltafDD, deltaIwd)
     # # #check waveform models
     # fwt = BinaryTimeWaveformAmpFreqD(params_true.copy(), 0, wc.Nt)
     # data = fwt.AET_FTs[0,:]
     # times = fwt.TTs
-    # np.savetxt('AET_FTs_massmodelv2.txt', data)
+    # np.savetxt('AET_FTs_massmodel_m1m2.txt', data)
     # np.savetxt('times.txt', times)
 
     #check fractional errors:

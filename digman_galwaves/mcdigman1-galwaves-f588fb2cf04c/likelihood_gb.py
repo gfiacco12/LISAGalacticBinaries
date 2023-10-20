@@ -21,8 +21,8 @@ import mcmc_params as mcp
 from ra_waveform_time import BinaryTimeWaveformAmpFreqD
 import ra_waveform_time as rwt
 
-fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-15,1.e-9,1.e-9])
-#, 1.e-43
+fisher_eps_default = np.array([1.e-25, 1.e0,1.e-3,1.e-6, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-15,1.e-12,1.e-12])
+#eps for alpha = 1.e0, beta = 1.e-3, delta = 1.e-6, 1.e-10, 1.e-19, 1.e-30,
 
 def get_noisy_gb_likelihood(params_fid, noise_AET_dense, sigma_prior_lim, strategy_params):
     """get a likelihood object for a noisy signal
@@ -234,21 +234,30 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     high_lims[rwt.idx_logdl] = params_fid[rwt.idx_logdl]+sigma_prior_lim*sigmas[rwt.idx_logdl]
 
     # the frequency derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
-    low_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]-2*sigma_prior_lim*sigmas[rwt.idx_freqD]
-    high_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]+2*sigma_prior_lim*sigmas[rwt.idx_freqD]
+    #low_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]-2*sigma_prior_lim*sigmas[rwt.idx_freqD]
+    #high_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]+2*sigma_prior_lim*sigmas[rwt.idx_freqD]
+    
+    low_lims[rwt.idx_beta] = params_fid[rwt.idx_beta]-2*sigma_prior_lim*sigmas[rwt.idx_beta]
+    high_lims[rwt.idx_beta] = params_fid[rwt.idx_beta]+2*sigma_prior_lim*sigmas[rwt.idx_beta]
     
     # the frequency second derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
-    low_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]-2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
-    high_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]+2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
+    #low_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]-2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
+    #high_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]+2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
+    
+    low_lims[rwt.idx_delta] = params_fid[rwt.idx_delta]-2*sigma_prior_lim*sigmas[rwt.idx_delta]
+    high_lims[rwt.idx_delta] = params_fid[rwt.idx_delta]+2*sigma_prior_lim*sigmas[rwt.idx_delta]
     
     # make sure initial frequency has at least a few possible characteristic modes at 1/year spacing included
     # but also isn't crossing multiple frequency pixels
     # and if both of those constraints are satisfied then do sigma boundaries
-    delta_freq = max(min(sigma_prior_lim*sigmas[rwt.idx_freq0], 2*wc.DF), 1.25/wc.SECSYEAR)
+    #delta_freq = max(min(sigma_prior_lim*sigmas[rwt.idx_freq0], 2*wc.DF), 1.25/wc.SECSYEAR)
     #low_lims[rwt.idx_freq0] = max(params_fid[rwt.idx_freq0]-delta_freq, 0.)
     #high_lims[rwt.idx_freq0] = min(params_fid[rwt.idx_freq0]+delta_freq, wc.Nf*wc.DF)
-    low_lims[rwt.idx_freq0] = params_fid[rwt.idx_freq0]-2*sigma_prior_lim*sigmas[rwt.idx_freq0]
-    high_lims[rwt.idx_freq0] = params_fid[rwt.idx_freq0]+2*sigma_prior_lim*sigmas[rwt.idx_freq0]
+
+    delta_alpha = max(min(sigma_prior_lim*sigmas[rwt.idx_alpha], 2*wc.DF), 1.25/wc.SECSYEAR)
+    low_lims[rwt.idx_alpha] = max(params_fid[rwt.idx_alpha]-delta_alpha, 0.)
+    high_lims[rwt.idx_alpha] = min(params_fid[rwt.idx_alpha]+delta_alpha, wc.Nf*wc.DF)
+
     # assume ecliptic latitude is just restricted by being physical
     low_lims[rwt.idx_costh] = -1.
     high_lims[rwt.idx_costh] = 1.
@@ -282,18 +291,17 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     high_lims[rwt.idx_iwd] = 1.5*params_fid[rwt.idx_iwd]
 
     #mass1
-    low_lims[rwt.idx_m1] = max(params_fid[rwt.idx_m1]-2*sigma_prior_lim*1.e3*sigmas[rwt.idx_m1], 0)
-    high_lims[rwt.idx_m1] = params_fid[rwt.idx_m1]+2*sigma_prior_lim*sigmas[rwt.idx_m1]
-
+    low_lims[rwt.idx_m1] = 0
+    high_lims[rwt.idx_m1] = 1.4*wc.MSOLAR
     #mass2
-    low_lims[rwt.idx_m2] = max(params_fid[rwt.idx_m2]-2*sigma_prior_lim*1.e3*sigmas[rwt.idx_m2], 0)
-    high_lims[rwt.idx_m2] = params_fid[rwt.idx_m2]+2*sigma_prior_lim*sigmas[rwt.idx_m2]
+    low_lims[rwt.idx_m2] = 0
+    high_lims[rwt.idx_m2] = 1.4*wc.MSOLAR
 
     return low_lims, high_lims
 
 
 PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
-PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\gamma$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r'$I_{WD} [gcm^{2}]$', r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
+PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\delta$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r'$I_{WD} [gcm^{2}]$', r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
 #, r"$\kappa$"
 
 def get_param_labels():
@@ -326,11 +334,11 @@ def format_samples_output(samples, params_fid, params_to_format = None):
             label = r"$10^{"+str(-log10_A_base)+r"}$"+label
             samples_got[:, rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
             params_fid_got[rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
-        elif (i == rwt.idx_freq0):
-            #samples_got[:, rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
-            samples_got[:, rwt.idx_freq0] *= 4*(wc.SECSYEAR)                       # convert frequency in Hz to dimensionless
-            #params_fid_got[rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
-            params_fid_got[rwt.idx_freq0] *= 4*(wc.SECSYEAR)                       # convert frequency in Hz to dimensionless
+        # elif (i == rwt.idx_freq0):
+        #     #samples_got[:, rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
+        #     samples_got[:, rwt.idx_freq0] *= 4*(wc.SECSYEAR)                       # convert frequency in Hz to dimensionless
+        #     #params_fid_got[rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
+        #     params_fid_got[rwt.idx_freq0] *= 4*(wc.SECSYEAR)                       # convert frequency in Hz to dimensionless
         # elif (i == rwt.idx_freqD):
         #     samples_got[:, rwt.idx_freqD] *= (4*wc.SECSYEAR)**2                       # convert frequency in Hz^2 to dimensionless
         #     params_fid_got[rwt.idx_freqD] *= (4*wc.SECSYEAR)**2                     # convert frequency in Hz^2 to dimensionless
