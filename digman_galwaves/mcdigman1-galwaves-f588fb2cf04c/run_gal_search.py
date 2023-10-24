@@ -36,19 +36,21 @@ if __name__ == '__main__':
     # starting variables
     n_chain = 20                     # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin =10000                   # number of iterations to discard as burn in
+    n_burnin =20000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 30000                 # number of samples to store total
+    store_size = 50000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
     T_max = 20.                      # maximum temperature for geometric part of temperature ladder
 
     sigma_prior_lim = 100.              # minimum standard deviations to allow around prior in amplitude, frequency, and frequency derivative
-    fdot, fddot, fdot_tides, fddot_tides, amp, Iwd, alpha, beta, delta = rwt.TruthParamsCalculator(15.e-3, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR, (1*wc.KPCSEC), (4*wc.SECSYEAR)) #not log of DL
+    fdot, fddot, fdot_tides, fddot_tides, amp, Iwd, alpha, beta, delta = rwt.TruthParamsCalculator(20.e-3, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR, (1*wc.KPCSEC), (4*wc.SECSYEAR)) #not log of DL
 
     params_true = np.array([amp, alpha, beta, delta, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6, Iwd, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR])  # true parameters for search -- Add in total mass and chirp mass
     print(alpha, beta, delta)
+    gamma = delta + (11/3)*(beta**2 / alpha)
+    print(gamma, (19/3) * ((beta * gamma) / alpha))
     # note that too many chains starting from the fiducial parameters can make the chain converge slower, if it fails to find secondary modes
     n_true_start = 4              # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)
 
@@ -89,12 +91,12 @@ if __name__ == '__main__':
     # deltafDD = (freqDD_tides - params_true[3] ) / params_true[3] 
     # deltaIwd = ( I_wd - params_true[12]) / params_true[12]
     # print("Fractional Change in FD, FDD, Iwd:", deltafD, deltafDD, deltaIwd)
-    # # #check waveform models
-    # fwt = BinaryTimeWaveformAmpFreqD(params_true.copy(), 0, wc.Nt)
-    # data = fwt.AET_FTs[0,:]
-    # times = fwt.TTs
-    # np.savetxt('AET_FTs_massmodel_m1m2.txt', data)
-    # np.savetxt('times.txt', times)
+    # #check waveform models
+    fwt = BinaryTimeWaveformAmpFreqD(params_true.copy(), 0, wc.Nt)
+    data = fwt.AET_FTs[0,:]
+    times = fwt.TTs
+    np.savetxt('AET_FTs_alphabetadelta.txt', data)
+    np.savetxt('times.txt', times)
 
     #check fractional errors:
     # dfreqD = like_obj.sigmas_in[2] / params_true[2]
@@ -148,8 +150,8 @@ if __name__ == '__main__':
     #print("sigma scales:", mcc.proposal_manager.managers[0].sigma_scales)
     # get flattened samples for plotting
     samples_flattened, logLs_flattened, logLs_unflattened = mcc.get_stored_flattened(corr_sum.restrict_n_burnin(mcc, n_burnin)) 
-    print(samples_flattened[0:30,12])
-    print(samples_flattened[0:30,13])
+    print(samples_flattened[0:30,2])
+    print(samples_flattened[0:30,3])
     #makeHistogramofLogLike(logLs_flattened)
 
     #makeScatterPlot(logLs_flattened, samples_flattened[:,6])
@@ -173,7 +175,7 @@ if do_corner_plot:
     import matplotlib.pyplot as plt
     import corner
     # reformat the samples to make the plots look nicer
-    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_logdl, rwt.idx_freq0, rwt.idx_m1, rwt.idx_m2])
+    samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_amp, rwt.idx_alpha, rwt.idx_beta, rwt.idx_delta])
     # create the corner plot figure
     fig = plt.figure(figsize=(10, 7.5))
     figure = corner.corner(samples_format, fig=fig, bins=25, hist_kwargs={"density": True}, show_titles=True, title_fmt=None,

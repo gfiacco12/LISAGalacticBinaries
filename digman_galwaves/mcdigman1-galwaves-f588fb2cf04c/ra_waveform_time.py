@@ -169,7 +169,7 @@ def TruthParamsCalculator(freq0, mass1, mass2, dl, tobs):
 
     #alpha beta gamma calculations
     alpha = freq0 * tobs
-    beta = fddot_tides * (tobs**2)
+    beta = fdot_tides * (tobs**2)
     gamma = fddot_tides * (tobs**3)
     delta = gamma - (11/3)*(beta**2 / alpha)
     return fdot, fddot, fdot_tides, fddot_tides, amp, I_wd, alpha, beta, delta
@@ -290,5 +290,5 @@ def AmpFreqDeriv_inplace_v2(AS, PS, FS, FDS, FDDS, Amp, phi0, ALPHA, BETA, GAMMA
         FS[n] = (ALPHA / T_obs) + (BETA /(T_obs**2))*(t-TTRef) + (1/2)*(GAMMA/(T_obs**3))*(t-TTRef)**2 + (1/6)*(KAPPA/(T_obs**4))*(t-TTRef)**3
         FDS[n] = (BETA /(T_obs**2)) + (GAMMA/(T_obs**3))*(t-TTRef) + (1/2)*(KAPPA/(T_obs**4))*(t-TTRef)**2
         FDDS[n] = (GAMMA/(T_obs**3)) + (KAPPA/(T_obs**4))*(t-TTRef)
-        PS[n] = -phiRef - 2*np.pi*(ALPHA / T_obs)*(t-TTRef) - np.pi*(BETA /(T_obs**2))*(t-TTRef)**2 - (np.pi/3)*(GAMMA/(T_obs**3))*(t-TTRef)**3 - (np.pi/12)*(KAPPA/(T_obs**4))*(t-TTRef)**4
+        PS[n] = phi0 - 2*np.pi*(ALPHA / T_obs)*(t-TTRef) - np.pi*(BETA /(T_obs**2))*(t-TTRef)**2 - (np.pi/3)*(GAMMA/(T_obs**3))*(t-TTRef)**3 - (np.pi/12)*(KAPPA/(T_obs**4))*(t-TTRef)**4
         AS[n] = Amp

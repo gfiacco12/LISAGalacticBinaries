@@ -21,7 +21,7 @@ import mcmc_params as mcp
 from ra_waveform_time import BinaryTimeWaveformAmpFreqD
 import ra_waveform_time as rwt
 
-fisher_eps_default = np.array([1.e-25, 1.e0,1.e-3,1.e-6, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-15,1.e-12,1.e-12])
+fisher_eps_default = np.array([1.e-25, 1.e-1, 1.e-3, 1.e-6, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-15,1.e-12,1.e-12])
 #eps for alpha = 1.e0, beta = 1.e-3, delta = 1.e-6, 1.e-10, 1.e-19, 1.e-30,
 
 def get_noisy_gb_likelihood(params_fid, noise_AET_dense, sigma_prior_lim, strategy_params):
@@ -254,9 +254,9 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     #low_lims[rwt.idx_freq0] = max(params_fid[rwt.idx_freq0]-delta_freq, 0.)
     #high_lims[rwt.idx_freq0] = min(params_fid[rwt.idx_freq0]+delta_freq, wc.Nf*wc.DF)
 
-    delta_alpha = max(min(sigma_prior_lim*sigmas[rwt.idx_alpha], 2*wc.DF), 1.25/wc.SECSYEAR)
-    low_lims[rwt.idx_alpha] = max(params_fid[rwt.idx_alpha]-delta_alpha, 0.)
-    high_lims[rwt.idx_alpha] = min(params_fid[rwt.idx_alpha]+delta_alpha, wc.Nf*wc.DF)
+    #delta_alpha = max(params_fid[rwt.idx_alpha]-2*sigma_prior_lim*sigmas[rwt.idx_alpha],0)
+    low_lims[rwt.idx_alpha] = params_fid[rwt.idx_alpha]-2*sigma_prior_lim*sigmas[rwt.idx_alpha]
+    high_lims[rwt.idx_alpha] = params_fid[rwt.idx_alpha]+2*sigma_prior_lim*sigmas[rwt.idx_alpha]
 
     # assume ecliptic latitude is just restricted by being physical
     low_lims[rwt.idx_costh] = -1.
@@ -301,7 +301,7 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
 
 
 PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
-PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\delta$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r'$I_{WD} [gcm^{2}]$', r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
+PLOT_LABELS = [r"$\mathcal{A}$", r"$\alpha$", r"$\beta$", r"$\delta$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r'$I_{WD} [gcm^{2}]$', r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
 #, r"$\kappa$"
 
 def get_param_labels():
