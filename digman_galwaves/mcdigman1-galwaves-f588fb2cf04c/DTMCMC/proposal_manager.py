@@ -107,7 +107,8 @@ class ProposalManager(JumpManager):
                 jump_weights[n_chain-1, itrj1:itrj2] = 0.  # override specified weights and only allow prior-type draws to contribute to the last chain
             itrj1 = itrj2
 
-        jump_probs = (jump_weights.T/jump_weights.sum(axis=1)).T
+        with np.errstate(divide='ignore',invalid='ignore'):
+            jump_probs = (jump_weights.T/jump_weights.sum(axis=1)).T
 
         self.jump_weights = jump_weights
         self.jump_probs = jump_probs

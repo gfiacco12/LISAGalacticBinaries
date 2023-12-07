@@ -13,6 +13,7 @@ and plot results"""
 from time import perf_counter
 
 import numpy as np
+#np.seterr(all='raise')
 import matplotlib.pyplot as plt
 
 import likelihood_gb as trial_likelihood
@@ -21,7 +22,6 @@ from DTMCMC.ptmcmc_helpers import PTMCMCChain
 from DTMCMC.temperature_ladder_helpers import TemperatureLadder
 from DTMCMC.corr_summary_helpers import CorrelationSummary
 from DTMCMC.proposal_strategy_helpers import ProposalStrategyParameters
-from DTMCMC.proposal_manager_helper import get_default_proposal_manager
 import ra_waveform_time as rwt
 from instrument_noise import get_galactic_novar_noise_model
 import wdm_const as wc 
@@ -34,28 +34,33 @@ if __name__ == '__main__':
     t0 = perf_counter()
 
     # starting variables
-    n_chain = 20                     # number of total chains for parallel tempering
-    n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin =10000                   # number of iterations to discard as burn in
+    n_chain = 16                     # number of total chains for parallel tempering
+    n_cold = 1                         # number of T=1 chains for parallel tempering
+    n_burnin = 60000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 30000                 # number of samples to store total
+    store_size = 120000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
-    de_size = 5000                     # number of samples to store in the differential evolution buffer
-    T_max = 20.                      # maximum temperature for geometric part of temperature ladder
+    de_size = 40000                     # number of samples to store in the differential evolution buffer
+    T_max = 2.                      # maximum temperature for geometric part of temperature ladder
 
-    sigma_prior_lim = 100.              # minimum standard deviations to allow around prior in amplitude, frequency, and frequency derivative
+    #TODO set sigma_prior_lim intelligently
+    sigma_prior_lim = 60.              # minimum standard deviations to allow around prior in amplitude, frequency, and frequency derivative
     fdot, fddot, fdot_tides, fddot_tides, amp, Iwd, fdddot = rwt.TruthParamsCalculator(15.e-3, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR, (1*wc.KPCSEC)) #not log of DL
 
-    params_true = np.array([amp,  15.e-3, fdot_tides, fddot_tides, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6, Iwd])  # true parameters for search -- Add in total mass and chirp mass
+    #params_true = np.array([amp,  15.e-3, fdot_tides, fddot_tides, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6, Iwd])  # true parameters for search -- Add in total mass and chirp mass
+    if rwt.USE_MASS_PARAMETERS:
+        params_true = np.array([15.e-3, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6])  # true parameters for search -- Add in total mass and chirp mass
+    else: 
+        params_true = np.array([15.e-3, np.log(1*wc.KPCSEC), fdot_tides, fddot_tides, -0.26,  4.6, 0.25,  1.5,  1.6])
 
     # note that too many chains starting from the fiducial parameters can make the chain converge slower, if it fails to find secondary modes
-    n_true_start = 4              # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)
+    n_true_start = 1              # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)
 
     # create needed objects
 
     noise_AET_dense = get_galactic_novar_noise_model()                 # get the noise model for the galactic background best fit with no time variability
-    strategy_params = ProposalStrategyParameters(de_size=de_size)      # get the object which stores various parameters related to the overall search strategy
+    strategy_params = ProposalStrategyParameters(de_size=de_size, cold_prior_weight=1./30, hot_prior_target_weight=1./30)      # get the object which stores various parameters related to the overall search strategy
     T_ladder = TemperatureLadder(n_chain, n_cold=n_cold, T_max=T_max)  # get the temperature ladder object
 
     like_obj = trial_likelihood.get_noiseless_gb_likelihood(params_true.copy(), noise_AET_dense, sigma_prior_lim, strategy_params)  # get the likelihood object
@@ -100,10 +105,28 @@ if __name__ == '__main__':
         else:
             # use a prior draw
             starting_samples[itrt] = like_obj.prior_draw()
-    
-    # create the overarching proposal manager object
-    proposal_manager = get_default_proposal_manager(T_ladder, like_obj, strategy_params, starting_samples)
+            starting_samples[itrt] = like_obj.correct_bounds(starting_samples[itrt])
+            if like_obj.check_bounds(starting_samples[itrt]):
+                like_loc = like_obj.get_loglike(starting_samples[itrt])
+            else:
+                like_loc = -np.inf
 
+            # loop until the starting point is valid
+            itrlim = 0
+            while not like_obj.check_bounds(starting_samples[itrt]) and not np.isfinite(like_loc) and itrlim < 1000000:
+                starting_samples[itrt] = like_obj.prior_draw()
+                starting_samples[itrt] = like_obj.correct_bounds(starting_samples[itrt])
+                if like_obj.check_bounds(starting_samples[itrt]):
+                    like_loc = like_obj.get_loglike(starting_samples[itrt])
+                else:
+                    like_loc = -np.inf
+                itrlim += 1 
+
+            if not like_obj.check_bounds(starting_samples[itrt]) or not np.isfinite(like_loc):
+                raise RuntimeError('Failed to generate usable starting point')
+
+        assert like_obj.check_bounds(starting_samples[itrt])
+    
     print('Chain parameters', n_cold, n_chain, n_burnin, block_size, store_size, de_size, T_max)
     print('True Template SNR: ', like_obj.get_snr(params_true))
 
@@ -145,6 +168,21 @@ if __name__ == '__main__':
     tf = perf_counter()
 
     print('full search time ', str(tf-t0)+'s')
+
+    stds_observed = np.sqrt(np.var(mcc.samples_store[:,0,:],axis=0))
+    print('observed std/diagonal fisher predicted std:',stds_observed/like_obj.sigmas_in)
+
+    high_dist = (mcc.samples_store[:,0].max(axis=0)-params_true)/like_obj.sigmas_in
+    low_dist = (mcc.samples_store[:,0].min(axis=0)-params_true)/like_obj.sigmas_in
+    max_dist = np.max([np.abs(high_dist),np.abs(low_dist)],axis=0)
+    print('maximum stds of deviation from true value',max_dist)
+
+    mass1_store = np.zeros(mcc.samples_store.shape[0])
+    mass2_store = np.zeros(mcc.samples_store.shape[0])
+    freqF_store = np.zeros(mcc.samples_store.shape[0])
+    for itrf in range(freqF_store.size):
+        mass1_store[itrf], mass2_store[itrf] = rwt.get_component_masses(mcc.samples_store[itrf,0,rwt.idx_mchirp],mcc.samples_store[itrf,0,rwt.idx_mtotal])
+        freqF_store[itrf] = rwt.get_freqF_masses(mcc.samples_store[itrf,0,rwt.idx_freq0], mcc.samples_store[itrf,0,rwt.idx_mchirp], mcc.samples_store[itrf,0,rwt.idx_mtotal])
 
 do_corner_plot = True
 if do_corner_plot:

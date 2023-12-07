@@ -21,7 +21,10 @@ import mcmc_params as mcp
 from ra_waveform_time import BinaryTimeWaveformAmpFreqD
 import ra_waveform_time as rwt
 
-fisher_eps_default = np.array([1.e-25, 1.e-10, 1.e-19, 1.e-30, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-15])
+if rwt.USE_MASS_PARAMETERS:
+    fisher_eps_default = np.array([1.e-13, 1.e-5, 1.e-10, 1.e-12, 5.e-6, 1.e-6, 1.e-4, 1.e-5, 2.e-5])
+else:
+    fisher_eps_default = np.array([1.e-12, 1.e-5, 1.e-19, 1.e-30, 1.e-5, 1.e-5, 1.e-6, 1.e-5, 1.e-4])
 #, 1.e-43
 
 def get_noisy_gb_likelihood(params_fid, noise_AET_dense, sigma_prior_lim, strategy_params):
@@ -68,6 +71,7 @@ def get_gb_likelihood(params_fid, data_use, fwt, noise_AET_dense, sigma_prior_li
     # get the sigmas we will use to define the prior ranges
     sigma_diag_array, _, _ = set_fishers(np.array([params_fid.copy()]), strategy_params, 1, like_obj_temp)
     sigma_diags = sigma_diag_array[0]
+
     # sigma_diags[-1] = 1.e-3 * params_fid[-1]
 
     # get the prior ranges
@@ -77,7 +81,11 @@ def get_gb_likelihood(params_fid, data_use, fwt, noise_AET_dense, sigma_prior_li
     like_obj_temp.low_lims = low_lims
     like_obj_temp.high_lims = high_lims
     like_obj_temp.sigmas_in = sigma_diags
-    #print(sigma_diags)
+
+    if rwt.USE_MASS_PARAMETERS:
+        like_obj_temp.freqF_low_lim = low_lims[rwt.idx_freq0]+like_obj_temp.freqF_fid-params_fid[rwt.idx_freq0]
+        like_obj_temp.freqF_high_lim = high_lims[rwt.idx_freq0]+like_obj_temp.freqF_fid-params_fid[rwt.idx_freq0]
+
     return like_obj_temp
 
 
@@ -109,6 +117,12 @@ class GalacticBinaryLikelihood(Likelihood):
         self.Tlists = np.full((wc.NC, mcp.NMT_max), -1, dtype=np.int64)
         self.NUTs = np.zeros(wc.NC, dtype=np.int64)
 
+        # assume we can set a prior on the final frequency with the same width but different center than the prior on the initial frequency
+        if rwt.USE_MASS_PARAMETERS:
+            self.freqF_fid = rwt.get_freqF_masses(params_fid[rwt.idx_freq0], params_fid[rwt.idx_mchirp], params_fid[rwt.idx_mtotal])
+            self.freqF_low_lim = self.low_lims[rwt.idx_freq0]+self.freqF_fid-self.params_fid[rwt.idx_freq0]
+            self.freqF_high_lim = self.high_lims[rwt.idx_freq0]+self.freqF_fid-self.params_fid[rwt.idx_freq0]
+
     def update_internal(self, params_in):
         """internally update the object to match the requested params_in"""
         self.fwt.update_params(params_in)
@@ -135,14 +149,33 @@ class GalacticBinaryLikelihood(Likelihood):
         self.update_internal(params_in)
         return np.sqrt(np.sum(diagonal_dense_snr_helper(self.inv_chol_SAET, self.Tlists, self.waveT, self.NUTs)**2))
 
-    def prior_draw(self):
+    def prior_draw(self, max_tries=10):
         """get a draw from the prior"""
-        return prior_draw(self.low_lims, self.high_lims)
+        params_out = prior_draw(self.low_lims, self.high_lims)
+        # try to redraw the point until it is in bounds; note that redraws like this are only MCMC legal
+        # for proposals where the proposed point is completely independent of the initial point
+        # for our current strategy the 'prior draws' are the only kind of proposal with that property
+        # setting a maximum number of tries prevents an infinite loop
+        # and also prevents drawing starting values for the differential evolution buffer from taking forever
+        # because for DE it is only marginally important the starting buffer points be in bounds
+        # and it is almost always better for the starting DE buffer to be overdispersed than underdispersed
+        itrd = 0
+        while not self.check_bounds(params_out) and itrd < max_tries:
+            params_out = prior_draw(self.low_lims, self.high_lims)
+            itrd += 1
 
-    def prior_proposal(self, params_in):
+        return params_out
+
+    def prior_proposal(self, params_in, max_tries=10):
         """get a proposal from the prior"""
         params_out = prior_draw(self.low_lims, self.high_lims)
-        return params_out, prior_factor(params_in)-prior_factor(params_out), True
+
+        itrd = 0
+        while not self.check_bounds(params_out) and itrd < max_tries:
+            params_out = prior_draw(self.low_lims, self.high_lims)
+            itrd += 1
+
+        return params_out, prior_factor(params_in)-prior_factor(params_out), self.check_bounds(params_out)
 
     def prior_factor(self, params_in):
         """get the density factor for prior draws, if the prior draws are not uniform"""
@@ -154,15 +187,43 @@ class GalacticBinaryLikelihood(Likelihood):
 
     def check_bounds(self, params_in):
         """check if the bounds of a draw are in the prior range but do not change them"""
-        return check_bounds(params_in, self.low_lims, self.high_lims)
+        return check_bounds(params_in, self.low_lims, self.high_lims, self.freqF_low_lim, self.freqF_high_lim)
 
 
 @njit()
-def check_bounds(params_in, low_lims, high_lims):
+def check_bounds(params_in, low_lims, high_lims, freqF_low_lim, freqF_high_lim):
     """check if a sample is within the prior range"""
     for itrp in range(params_in.size):
-        if not low_lims[itrp] < params_in[itrp] < high_lims[itrp]:
+        if not low_lims[itrp] <= params_in[itrp] <= high_lims[itrp]:
             return False
+
+    if rwt.USE_MASS_PARAMETERS:
+        eta = rwt.get_eta(params_in[rwt.idx_mchirp],params_in[rwt.idx_mtotal])
+
+        # make sure eta is physical
+        if eta > 0.25:
+            return False
+
+        # make sure component masses are in expected range
+        mass1, mass2 = rwt.get_component_masses(params_in[rwt.idx_mchirp], params_in[rwt.idx_mtotal])
+        if mass1 < rwt.min_primary_mass:
+            return False
+
+        if mass2 < rwt.min_component_mass:
+            return False
+
+        if mass2/mass1 < rwt.min_mass_ratio:
+            return False
+
+        if mass1 > rwt.max_primary_mass:
+            return False
+
+        if mass2 > rwt.max_component_mass:
+            return False
+
+        if not freqF_low_lim <= rwt.get_freqF_masses(params_in[rwt.idx_freq0], params_in[rwt.idx_mchirp], params_in[rwt.idx_mtotal]) <= freqF_high_lim:
+            return False
+
     return True
 
 
@@ -192,7 +253,10 @@ def correct_bounds(params_in, low_lims, high_lims, do_wrap=True):
     # note that wrapping isn't a safe operation for some jump types like asymmetric jumps, so include an option not to do it
     if do_wrap:
         for itrp in range(0, params_in.size):
-            params_in[itrp] = reflect_into_range(params_in[itrp], low_lims[itrp], high_lims[itrp])
+            if low_lims[itrp] == high_lims[itrp]:
+                params_in[itrp] = low_lims[itrp]
+            else:
+                params_in[itrp] = reflect_into_range(params_in[itrp], low_lims[itrp], high_lims[itrp])
 
     return params_in
 
@@ -226,29 +290,61 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     high_lims = np.zeros(n_par)
 
     # the amplitude can't be negative but other than that assume we have a coarse estimate available
-    low_lims[rwt.idx_amp] = max(params_fid[rwt.idx_amp]-sigma_prior_lim*sigmas[rwt.idx_amp], 0.)
-    high_lims[rwt.idx_amp] = params_fid[rwt.idx_amp]+sigma_prior_lim*sigmas[rwt.idx_amp]
+    #low_lims[rwt.idx_amp] = max(params_fid[rwt.idx_amp]-sigma_prior_lim*sigmas[rwt.idx_amp], 0.)
+    #high_lims[rwt.idx_amp] = params_fid[rwt.idx_amp]+sigma_prior_lim*sigmas[rwt.idx_amp]
 
     # luminosity distance
     low_lims[rwt.idx_logdl] = max(params_fid[rwt.idx_logdl]-sigma_prior_lim*sigmas[rwt.idx_logdl], 0.)
     high_lims[rwt.idx_logdl] = params_fid[rwt.idx_logdl]+sigma_prior_lim*sigmas[rwt.idx_logdl]
 
-    # the frequency derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
-    low_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]-2*sigma_prior_lim*sigmas[rwt.idx_freqD]
-    high_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]+2*sigma_prior_lim*sigmas[rwt.idx_freqD]
-    
-    # the frequency second derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
-    low_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]-2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
-    high_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]+2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
-    
+    if rwt.USE_MASS_PARAMETERS:
+        #chirp mass priors
+        # A lower bound on chirp mass can be inferred from some other constraints
+        mc_min = max(0., pow(rwt.min_component_mass*rwt.min_primary_mass,3.0/5.0)/pow((rwt.min_primary_mass+rwt.min_component_mass),1.0/5.0))
+        mc_min = max(mc_min, params_fid[rwt.idx_mchirp]-4000*sigma_prior_lim*sigmas[rwt.idx_mchirp])
+
+        mc_max = max(0.,params_fid[rwt.idx_mchirp]+4000*sigma_prior_lim*sigmas[rwt.idx_mchirp])
+        mc_max = max(mc_max, mc_min)
+
+        low_lims[rwt.idx_mchirp] = mc_min
+        high_lims[rwt.idx_mchirp] =  mc_max
+
+        #total mass priors
+
+        # Some constraints on mt can be inferred from constraints on mc, allowable component masses, and allowable mass ratios
+        mt_min = max(0., rwt.min_primary_mass+rwt.min_component_mass)
+        mt_min = max(mt_min, low_lims[rwt.idx_mchirp]*2**(6./5.))
+        mt_min = max(mt_min, params_fid[rwt.idx_mtotal]-4000*sigma_prior_lim*sigmas[rwt.idx_mtotal])
+
+        mt_max = max(0., high_lims[rwt.idx_mchirp]/(rwt.min_mass_ratio**(3./5.)/(1.+rwt.min_mass_ratio)**(6./5.)))
+        mt_max = min(mt_max, params_fid[rwt.idx_mtotal]+4000*sigma_prior_lim*sigmas[rwt.idx_mtotal])
+        mt_max = min(mt_max, rwt.max_primary_mass+rwt.max_component_mass)
+        mt_max = max(mt_min, mt_max)
+
+        low_lims[rwt.idx_mtotal] = mt_min
+        high_lims[rwt.idx_mtotal] = mt_max
+
+    else:
+        # the frequency derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
+        low_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]-2*sigma_prior_lim*sigmas[rwt.idx_freqD]
+        high_lims[rwt.idx_freqD] = params_fid[rwt.idx_freqD]+2*sigma_prior_lim*sigmas[rwt.idx_freqD]
+
+        # the frequency second derivative doesn't have any particular hard boundaries (it can be negative in principle) so just do sigma boundaries
+        low_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]-2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
+        high_lims[rwt.idx_freqDD] = params_fid[rwt.idx_freqDD]+2*sigma_prior_lim*sigmas[rwt.idx_freqDD]
+
+        #moment of inertia priors (in s)
+        #low_lims[rwt.idx_iwd] = 0.5*params_fid[rwt.idx_iwd]
+        #high_lims[rwt.idx_iwd] = 1.5*params_fid[rwt.idx_iwd]
+
     # make sure initial frequency has at least a few possible characteristic modes at 1/year spacing included
     # but also isn't crossing multiple frequency pixels
     # and if both of those constraints are satisfied then do sigma boundaries
-    delta_freq = max(min(sigma_prior_lim*sigmas[rwt.idx_freq0], 2*wc.DF), 1.25/wc.SECSYEAR)
+    #delta_freq = max(sigma_prior_lim*sigmas[rwt.idx_freq0], 1.25/wc.SECSYEAR)
     #low_lims[rwt.idx_freq0] = max(params_fid[rwt.idx_freq0]-delta_freq, 0.)
     #high_lims[rwt.idx_freq0] = min(params_fid[rwt.idx_freq0]+delta_freq, wc.Nf*wc.DF)
-    low_lims[rwt.idx_freq0] = params_fid[rwt.idx_freq0]-2*sigma_prior_lim*sigmas[rwt.idx_freq0]
-    high_lims[rwt.idx_freq0] = params_fid[rwt.idx_freq0]+2*sigma_prior_lim*sigmas[rwt.idx_freq0]
+    low_lims[rwt.idx_freq0] = max(params_fid[rwt.idx_freq0]-4*sigma_prior_lim*sigmas[rwt.idx_freq0], 0.)
+    high_lims[rwt.idx_freq0] = params_fid[rwt.idx_freq0]+4*sigma_prior_lim*sigmas[rwt.idx_freq0]
     # assume ecliptic latitude is just restricted by being physical
     low_lims[rwt.idx_costh] = -1.
     high_lims[rwt.idx_costh] = 1.
@@ -269,23 +365,19 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     low_lims[rwt.idx_phi0] = 0.
     high_lims[rwt.idx_phi0] = np.pi
 
-    #chirp mass priors
-    low_lims[rwt.idx_mchirp] = max(params_fid[rwt.idx_mchirp]-2*sigma_prior_lim*sigmas[rwt.idx_mchirp], 0)
-    high_lims[rwt.idx_mchirp] =  params_fid[rwt.idx_mchirp]+2*sigma_prior_lim*sigmas[rwt.idx_mchirp]
 
-    #total mass priors
-    low_lims[rwt.idx_mtotal] = max(params_fid[rwt.idx_mtotal]-2*sigma_prior_lim*sigmas[rwt.idx_mtotal], 0)
-    high_lims[rwt.idx_mtotal] = params_fid[rwt.idx_mtotal]+2*sigma_prior_lim*sigmas[rwt.idx_mtotal]
 
-    #moment of inertia priors (in s)
-    low_lims[rwt.idx_iwd] = 0.5*params_fid[rwt.idx_iwd]
-    high_lims[rwt.idx_iwd] = 1.5*params_fid[rwt.idx_iwd]
 
     return low_lims, high_lims
 
+#r"$\mathcal{A}$"
 
-PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
-PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\gamma$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r'$I_{WD} [gcm^{2}]$'] 
+if rwt.USE_MASS_PARAMETERS:
+    PARAM_LABELS = [r"$f_0$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"]
+    PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r'$I_{WD} [gcm^{2}]$']
+else:
+    PARAM_LABELS = [r"$f_0$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$f'$", r"$f''$", r"$D_{L}$", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"]
+    PLOT_LABELS = [r"$\mathcal{A}$", r"$\Delta \alpha$", r"$\beta$", r"$\gamma$", r"$D_{L}$", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$"]
 #, r"$\kappa$"
 
 def get_param_labels():
@@ -298,7 +390,7 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         inputs:
             samples: a 2D (n_samples,n_par) float array
             params_fid 1D float array, the fiducial parameters"""
-    if (params_to_format == None):
+    if params_to_format is None:
         params_to_format = range(0, np.len(samples[0])) # [0, 1, 2, ..., 12]
 
     samples_got = samples.copy()
@@ -312,36 +404,39 @@ def format_samples_output(samples, params_fid, params_to_format = None):
     for i in params_to_format:
         label = labels_loc[i]
 
-        if (i == rwt.idx_amp):
-            # get the exponent on the amplitude
-            log10_A_base = int(np.floor(np.log10(params_fid[rwt.idx_amp])))
-            label = r"$10^{"+str(-log10_A_base)+r"}$"+label
-            samples_got[:, rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
-            params_fid_got[rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
-        elif (i == rwt.idx_freq0):
+        #if (i == rwt.idx_amp):
+        #    # get the exponent on the amplitude
+        #    log10_A_base = int(np.floor(np.log10(params_fid[rwt.idx_amp])))
+        #    label = r"$10^{"+str(-log10_A_base)+r"}$"+label
+        #    samples_got[:, rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
+        #    params_fid_got[rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
+        if i == rwt.idx_freq0:
             #samples_got[:, rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
             samples_got[:, rwt.idx_freq0] *= 4*(wc.SECSYEAR)                       # convert frequency in Hz to dimensionless
             #params_fid_got[rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
             params_fid_got[rwt.idx_freq0] *= 4*(wc.SECSYEAR)                       # convert frequency in Hz to dimensionless
-        # elif (i == rwt.idx_freqD):
-        #     samples_got[:, rwt.idx_freqD] *= (4*wc.SECSYEAR)**2                       # convert frequency in Hz^2 to dimensionless
-        #     params_fid_got[rwt.idx_freqD] *= (4*wc.SECSYEAR)**2                     # convert frequency in Hz^2 to dimensionless
-        # elif (i == rwt.idx_freqDD):
-        #     samples_got[:, rwt.idx_freqDD] = samples_got[:, rwt.idx_freqDD] * (4*wc.SECSYEAR)**3                      # convert frequency in Hz^2 to dimensionless
-        #     params_fid_got[rwt.idx_freqDD] = params_fid_got[rwt.idx_freqDD] * (4*wc.SECSYEAR)**3                     # convert frequency in Hz^2 to dimensionless
-        elif (i == rwt.idx_logdl):
+        elif i == rwt.idx_logdl:
             samples_got[:, rwt.idx_logdl] = np.log(np.exp(samples_got[:,rwt.idx_logdl])/wc.KPCSEC)    #convert back to kpc
             params_fid_got[rwt.idx_logdl] = np.log(np.exp(params_fid_got[rwt.idx_logdl])/wc.KPCSEC)   #convert back to kpc
-        elif (i == rwt.idx_mtotal):
-            samples_got[:, rwt.idx_mtotal] /= wc.MSOLAR              # Convert to solar masses
-            params_fid_got[rwt.idx_mtotal] /= wc.MSOLAR              # Convert to solar masses
-        elif (i == rwt.idx_mchirp):
-            samples_got[:, rwt.idx_mchirp] /= wc.MSOLAR
-            params_fid_got[rwt.idx_mchirp] /= wc.MSOLAR
-        elif (i == rwt.idx_iwd):
-            samples_got[:, rwt.idx_iwd] /= wc.IWDtoSEC                 # Convert to cgs
-            params_fid_got[rwt.idx_iwd] /= wc.IWDtoSEC
-        
+        else:
+            if rwt.USE_MASS_PARAMETERS:
+                if i == rwt.idx_mtotal:
+                    samples_got[:, rwt.idx_mtotal] /= wc.MSOLAR              # Convert to solar masses
+                    params_fid_got[rwt.idx_mtotal] /= wc.MSOLAR              # Convert to solar masses
+                elif i == rwt.idx_mchirp:
+                    samples_got[:, rwt.idx_mchirp] /= wc.MSOLAR
+                    params_fid_got[rwt.idx_mchirp] /= wc.MSOLAR
+            else:
+                if i == rwt.idx_freqD:
+                    samples_got[:, rwt.idx_freqD] *= (4*wc.SECSYEAR)**2                       # convert frequency in Hz^2 to dimensionless
+                    params_fid_got[rwt.idx_freqD] *= (4*wc.SECSYEAR)**2                     # convert frequency in Hz^2 to dimensionless
+                elif i == rwt.idx_freqDD:
+                    samples_got[:, rwt.idx_freqDD] = samples_got[:, rwt.idx_freqDD] * (4*wc.SECSYEAR)**3                      # convert frequency in Hz^2 to dimensionless
+                    params_fid_got[rwt.idx_freqDD] = params_fid_got[rwt.idx_freqDD] * (4*wc.SECSYEAR)**3                     # convert frequency in Hz^2 to dimensionless
+                #elif i == rwt.idx_iwd:
+                #    samples_got[:, rwt.idx_iwd] /= wc.IWDtoSEC                 # Convert to cgs
+                #    params_fid_got[rwt.idx_iwd] /= wc.IWDtoSEC
+
         labels.append(label)
         params_fin.append(params_fid_got[i])
 
@@ -349,7 +444,7 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         s = []
         for i in params_to_format:
             s.append(sample[i])
-        # gamma = s[rwt.idx_freqDD] 
+        # gamma = s[rwt.idx_freqDD]
         # alpha = s[rwt.idx_freq0]
         # beta = s[rwt.idx_freqD]
         # delta = (gamma - (11/3) * (beta**2 / alpha))
@@ -361,7 +456,7 @@ def format_samples_output(samples, params_fid, params_to_format = None):
 
     #labels.append(r"$\delta$")
     print (labels)
-    
+
     return np.array(samples_fin), np.array(params_fin), labels
 
 

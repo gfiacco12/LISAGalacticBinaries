@@ -73,13 +73,13 @@ class FisherJumpManager(JumpManager):
         full_weight = self.strategy_params.fisher_subspace_override_frac
 
         if self.strategy_params.use_chol_fishers:
+            jump_weights[:n_cold, self.code_to_idx[FISHER_FULL]] = cold_weight
             jump_weights[:n_cold, self.code_to_idx[SIGMA_FULL]] = 0.
             jump_weights[:n_cold, self.code_to_idx[SIGMA_RANDOM_SUBSPACE]] = 0.
-            jump_weights[:n_cold, self.code_to_idx[FISHER_FULL]] = cold_weight
         else:
+            jump_weights[:n_cold, self.code_to_idx[FISHER_FULL]] = 0.
             jump_weights[:n_cold, self.code_to_idx[SIGMA_FULL]] = cold_weight*full_weight
             jump_weights[:n_cold, self.code_to_idx[SIGMA_RANDOM_SUBSPACE]] = cold_weight*subspace_weight
-            jump_weights[:n_cold, self.code_to_idx[FISHER_FULL]] = 0.
 
         if self.strategy_params.use_chol_fishers:
             jump_weights[n_cold:, self.code_to_idx[FISHER_FULL]] = hot_weight
@@ -87,11 +87,12 @@ class FisherJumpManager(JumpManager):
             jump_weights[n_cold:, self.code_to_idx[SIGMA_RANDOM_SUBSPACE]] = 0.
         else:
             jump_weights[n_cold:, self.code_to_idx[FISHER_FULL]] = 0.
-            jump_weights[n_cold:, self.code_to_idx[SIGMA_FULL]] = hot_weight*subspace_weight
-            jump_weights[n_cold:, self.code_to_idx[SIGMA_RANDOM_SUBSPACE]] = hot_weight*full_weight
+            jump_weights[n_cold:, self.code_to_idx[SIGMA_FULL]] = hot_weight*full_weight
+            jump_weights[n_cold:, self.code_to_idx[SIGMA_RANDOM_SUBSPACE]] = hot_weight*subspace_weight
 
         self.jump_weights = jump_weights
-        self.jump_probs = (self.jump_weights.T/self.jump_weights.sum(axis=1)).T  # the normalized conditional jump probabilities
+        with np.errstate(divide='ignore',invalid='ignore'):
+            self.jump_probs = (self.jump_weights.T/self.jump_weights.sum(axis=1)).T  # the normalized conditional jump probabilities
 
     def get_jump_weights(self):
         """get the desired weights of this jump type as a function of temperature"""
@@ -155,51 +156,79 @@ class FisherJumpManager(JumpManager):
             self.reset_fishers_from_point(samples_fisher)
 
 
-def set_fishers(sample_set, strategy_params, n_chain, like_obj):
+def set_fishers(sample_set, strategy_params, n_chain, like_obj, force_fisher_full=False):
     """set up the fisher matrices"""
-    use_chol_fishers = strategy_params.use_chol_fishers
+    #TODO separate fisher success and std success
+    use_chol_fishers = strategy_params.use_chol_fishers or force_fisher_full
     sigma_default = strategy_params.sigma_default
     max_fisher_el = strategy_params.max_fisher_el
 
     n_par = sample_set.shape[1]
+    fisher_success = np.full((n_chain,n_par),True,dtype=np.bool_)
     sigma_diags = np.zeros((n_chain, n_par))
-    if use_chol_fishers:
-        fishers = np.zeros((n_chain, n_par, n_par))
-        chol_fishers = np.zeros((n_chain, n_par, n_par))
-    else:
-        fishers = np.zeros((0, 0, 0))
-        chol_fishers = np.zeros((0, 0, 0))
+
+    fishers = np.zeros((n_chain, n_par, n_par))
+    chol_fishers = np.zeros((n_chain, n_par, n_par))
 
     epsilons = like_obj.epsilons
 
     for itrt in range(n_chain):
         new_point = sample_set[itrt]
         new_point_alt = like_obj.correct_bounds(new_point.copy())
-        assert np.all(new_point[:rwt.idx_freqD] == new_point_alt[:rwt.idx_freqD])
-        assert np.all(new_point[rwt.idx_freqD+1:] == new_point_alt[rwt.idx_freqD+1:])
+        assert np.all(new_point == new_point_alt)
+
+        if itrt > 0 and np.any(np.all(new_point==sample_set[:itrt-1],axis=1)):
+            # if the point is already calculated, just copy in the results
+            itrt_prev = np.argmax(np.all(new_point==sample_set[:itrt-1],axis=1))
+            sigma_diags[itrt] = sigma_diags[itrt_prev]
+            fishers[itrt] = fishers[itrt_prev]
+            chol_fishers[itrt] = chol_fishers[itrt_prev]
+            fisher_success[itrt] = fisher_success[itrt_prev]
+            continue
+
+        for itrp in range(n_par):
+            fishers[itrt, itrp, itrp] = 1./sigma_default**2
+            sigma_diags[itrt, itrp] = sigma_default
+
+        if not like_obj.check_bounds(new_point):
+            # if the point is not valid cannot evaluate here
+            fisher_success[itrt,:] = False
+            continue
+
+
         nn = like_obj.get_loglike(new_point)
         for itrp in range(n_par):
             eps = epsilons[itrp]
             pointp = new_point.copy()
             pointp[itrp] += 2*eps
-            pointmp = like_obj.correct_bounds(pointp)
+            pointp = like_obj.correct_bounds(pointp)
+            if not like_obj.check_bounds(pointp):
+                fisher_success[itrt,itrp] = False
+                continue
+
             pp = like_obj.get_loglike(pointp)
 
             pointm = new_point.copy()
             pointm[itrp] -= 2*eps
             pointm = like_obj.correct_bounds(pointm)
+            if not like_obj.check_bounds(pointm):
+                fisher_success[itrt,itrp] = False
+                continue
+
             mm = like_obj.get_loglike(pointm)
 
             fisher_loc = -(pp - 2.0*nn + mm)/(4*eps*eps)+1./sigma_default**2
 
-            if use_chol_fishers:
-                fishers[itrt, itrp, itrp] = fisher_loc
+            fishers[itrt, itrp, itrp] = fisher_loc
+
             if not np.isfinite(fisher_loc) or fisher_loc <= 0. or fisher_loc > max_fisher_el:
-                if use_chol_fishers:
-                    fishers[itrt, itrp, itrp] = 1./sigma_default**2
+                fishers[itrt, itrp, itrp] = 1./sigma_default**2
                 sigma_diags[itrt, itrp] = sigma_default
             else:
                 sigma_diags[itrt, itrp] = 1./np.sqrt(fisher_loc)
+
+        if not np.all(fisher_success[itrt]):
+            continue
 
         if use_chol_fishers:
             for itrp1 in range(n_par):
@@ -210,24 +239,36 @@ def set_fishers(sample_set, strategy_params, n_chain, like_obj):
                     pointpp[itrp1] += eps1
                     pointpp[itrp2] += eps2
                     pointpp = like_obj.correct_bounds(pointpp)
+                    if not like_obj.check_bounds(pointpp):
+                        fisher_success[itrt] = False
+                        break
                     pp = like_obj.get_loglike(pointpp)
 
                     pointpm = new_point.copy()
                     pointpm[itrp1] += eps1
                     pointpm[itrp2] -= eps2
                     pointpm = like_obj.correct_bounds(pointpm)
+                    if not like_obj.check_bounds(pointpm):
+                        fisher_success[itrt] = False
+                        break
                     pm = like_obj.get_loglike(pointpm)
 
                     pointmp = new_point.copy()
                     pointmp[itrp1] -= eps1
                     pointmp[itrp2] += eps2
                     pointmp = like_obj.correct_bounds(pointmp)
+                    if not like_obj.check_bounds(pointmp):
+                        fisher_success[itrt] = False
+                        break
                     mp = like_obj.get_loglike(pointmp)
 
                     pointmm = new_point.copy()
                     pointmm[itrp1] -= eps1
                     pointmm[itrp2] -= eps2
                     pointmm = like_obj.correct_bounds(pointmm)
+                    if not like_obj.check_bounds(pointmm):
+                        fisher_success[itrt] = False
+                        break
                     mm = like_obj.get_loglike(pointmm)
 
                     res = -(pp - mp - pm + mm)/(4.0*eps1*eps2)
@@ -237,14 +278,32 @@ def set_fishers(sample_set, strategy_params, n_chain, like_obj):
                     fishers[itrt, itrp1, itrp2] = res
                     fishers[itrt, itrp2, itrp1] = fishers[itrt, itrp1, itrp2]
 
-            det_fisher = np.linalg.det(fishers[itrt])
-            if not np.isfinite(det_fisher) or det_fisher <= 0. or np.any(np.linalg.eigh(fishers[itrt])[0] <= 0.):
-                for itrp1 in range(n_par):
-                    for itrp2 in range(itrp1+1, n_par):
-                        fishers[itrt, itrp1, itrp2] = 0.
-                        fishers[itrt, itrp2, itrp1] = 0.
+            if not fisher_success[itrt]:
+                continue
 
-            chol_fishers[itrt] = np.linalg.cholesky(fishers[itrt])
+            det_fisher = np.linalg.det(fishers[itrt])
+
+            if not force_fisher_full:
+                if not np.isfinite(det_fisher) or det_fisher <= 0. or np.any(np.linalg.eigh(fishers[itrt])[0] <= 0.):
+                    for itrp1 in range(n_par):
+                        for itrp2 in range(itrp1+1, n_par):
+                            fishers[itrt, itrp1, itrp2] = 0.
+                            fishers[itrt, itrp2, itrp1] = 0.
+                    chol_fishers[itrt] = np.linalg.cholesky(fishers[itrt])
+                else:
+                    chol_fishers[itrt] = np.linalg.cholesky(fishers[itrt])
+
+    if np.any(np.all(fisher_success,axis=1)):
+        arg_success = np.argwhere(fisher_success).flatten()
+
+        for itrt in range(n_chain):
+            if not np.all(fisher_success[itrt]):
+                # if a fisher matrix failed, replace it with a random one that did not fail
+                arg_choice = arg_success[np.random.randint(0,arg_success.size)]
+                sigma_diags[itrt] = sigma_diags[arg_choice]
+                fishers[itrt] = fishers[arg_choice]
+                chol_fishers[itrt] = chol_fishers[arg_choice]
+
     return sigma_diags, fishers, chol_fishers
 
 

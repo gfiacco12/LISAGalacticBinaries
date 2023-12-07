@@ -113,7 +113,8 @@ class DEJumpManager(JumpManager):
         jump_weights[n_cold:, self.code_to_idx[DE_BIG_RANDOM_SUBSPACE]] = hot_de_weight*big_subspace_prob
 
         self.jump_weights = jump_weights
-        self.jump_probs = (self.jump_weights.T/self.jump_weights.sum(axis=1)).T  # the normalized conditional jump probabilities
+        with np.errstate(divide='ignore'):
+            self.jump_probs = (self.jump_weights.T/self.jump_weights.sum(axis=1)).T  # the normalized conditional jump probabilities
 
     def get_jump_weights(self):
         """get the desired weights of this jump type as a function of temperature"""

@@ -51,7 +51,8 @@ class AuxilliaryJumpManager(JumpManager):
         jump_weights[:] = 1./3.  # just a default equal weight
 
         self.jump_weights = jump_weights
-        self.jump_probs = (self.jump_weights.T/self.jump_weights.sum(axis=1)).T  # the normalized conditional jump probabilities
+        with np.errstate(divide='ignore',invalid='ignore'):
+            self.jump_probs = (self.jump_weights.T/self.jump_weights.sum(axis=1)).T  # the normalized conditional jump probabilities
 
     def get_jump_weights(self):
         """get the desired weights of this jump type as a function of temperature"""

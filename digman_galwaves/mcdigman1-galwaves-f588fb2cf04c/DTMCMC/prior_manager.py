@@ -59,7 +59,8 @@ class PriorManager(JumpManager):
         jump_weights[n_cold:n_chain-1, self.code_to_idx[PRIOR_FULL]] = np.linspace(cold_prior_weight, hot_prior_weight, (n_chain-n_cold))[1:]
 
         self.jump_weights = jump_weights
-        self.jump_probs = (self.jump_weights.T/self.jump_weights.sum(axis=1)).T  # the normalized conditional jump probabilities
+        with np.errstate(divide='ignore',invalid='ignore'):
+            self.jump_probs = (self.jump_weights.T/self.jump_weights.sum(axis=1)).T  # the normalized conditional jump probabilities
 
     def get_jump_weights(self):
         """get the desired weights of this jump type as a function of temperature"""

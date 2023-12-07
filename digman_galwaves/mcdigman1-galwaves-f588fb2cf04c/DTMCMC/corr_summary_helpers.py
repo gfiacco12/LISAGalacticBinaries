@@ -81,13 +81,15 @@ class CorrelationSummary():
             get_blockwise_vars(N_blocks, n_burnin_thin, mcc.samples_store, block_size, 0, itrp, blockwise_vars, blockwise_means)
             get_blockwise_vars_scramble(N_blocks, n_cold, n_burnin_thin, mcc.samples_store, block_size, 0, itrp, blockwise_vars_scramble, blockwise_means_scramble)
 
-            n_eff_preds_empirical[itrp] = np.var(blockwise_means_scramble[0, itrp, :])/np.var(blockwise_means[0, itrp, :])*n_tot
+            with np.errstate(invalid='ignore'):
+                n_eff_preds_empirical[itrp] = np.var(blockwise_means_scramble[0, itrp, :])/np.var(blockwise_means[0, itrp, :])*n_tot
 
             if self.do_autocorr:
                 autocorr_lim, autocorr_cut, est_vars_auto[itrp] = autocorr_helper(mcc, itrp, n_burnin_thin)
                 self.autocorr_lims.append(autocorr_lim)
 
-                n_eff_preds_auto[itrp] = n_tot/(est_vars_auto[itrp]/autocorr_lim[0])
+                with np.errstate(invalid='ignore'):
+                    n_eff_preds_auto[itrp] = n_tot/(est_vars_auto[itrp]/autocorr_lim[0])
 
                 if self.do_cross:
                     cov_cross_lim, cov_cross_cut, est_vars_cross[itrp] = get_crosscorr_sum(mcc, n_burnin_thin, itrp, autocorr_lim, autocorr_cut, obs_var_loc, n_eff_preds_auto)
@@ -95,7 +97,8 @@ class CorrelationSummary():
 
                 est_vars[itrp] = est_vars_auto[itrp]+est_vars_cross[itrp]
 
-                n_eff_preds[itrp] = n_tot/(est_vars[itrp]/autocorr_lim[0])  # TODO double check factor of two
+                with np.errstate(invalid='ignore'):
+                    n_eff_preds[itrp] = n_tot/(est_vars[itrp]/autocorr_lim[0])  # TODO double check factor of two
 
         self.blockwise_vars.append(blockwise_vars[0])
         self.blockwise_means.append(blockwise_means[0])
@@ -280,7 +283,8 @@ def autocorr_summary_print(n_par, autocorr_lims, do_cross):
         if do_cross:
             crosscorr_lim_means[itrp] = crosscorr_lim_array[itrp::n_par].mean(axis=0)
         autocorr_cut_means[itrp] = 1+np.argmax(autocorr_lim_means[itrp, 1:] < 0.)
-        autocorr_len_means[itrp] = (autocorr_lim_means[itrp, 0]+2*np.sum(autocorr_lim_means[itrp, 1:autocorr_cut_means[itrp]]))/autocorr_lim_means[itrp, 0]
+        with np.errstate(invalid='ignore'):
+            autocorr_len_means[itrp] = (autocorr_lim_means[itrp, 0]+2*np.sum(autocorr_lim_means[itrp, 1:autocorr_cut_means[itrp]]))/autocorr_lim_means[itrp, 0]
         autocorr_len_str = autocorr_len_str + " %.8e" % autocorr_len_means[itrp]
 
     print("best estimate of autocorrelation lengths:", autocorr_len_str)

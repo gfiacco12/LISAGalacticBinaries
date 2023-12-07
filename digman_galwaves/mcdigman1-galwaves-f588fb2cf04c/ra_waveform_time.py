@@ -7,21 +7,40 @@ from ra_waveform_freq import RAantenna_inplace, spacecraft_vec, get_xis_inplace,
 
 import wdm_const as wc
 from algebra_tools import gradient_homog_2d_inplace
-from scipy.optimize import fsolve
+#from scipy.optimize import fsolve
 
-idx_amp = 0
-idx_freq0 = 1
-idx_freqD = 2
-idx_freqDD = 3
-idx_logdl = 4
-idx_mtotal = 5
-idx_mchirp = 6
-idx_costh = 7
-idx_phi = 8
-idx_cosi = 9
-idx_phi0 = 10
-idx_psi = 11
-idx_iwd = 12
+#idx_amp = 0
+idx_freq0 = 0
+idx_logdl = 1
+idx_costh = 4
+idx_phi = 5
+idx_cosi = 6
+idx_phi0 = 7
+idx_psi = 8
+
+USE_MASS_PARAMETERS = True
+
+if USE_MASS_PARAMETERS:
+    idx_mtotal = 2
+    idx_mchirp = 3
+    n_par = 9
+else:
+    idx_freqD = 2
+    idx_freqDD = 3
+    n_par = 9
+
+#idx_iwd = 9
+
+
+# make sure we aren't looking for low mass objects or extreme mass ratios
+min_primary_mass = 0.05*wc.MSOLAR
+min_mass_ratio = 0.2
+min_component_mass = max(min_mass_ratio*min_primary_mass,0.01*wc.MSOLAR)
+
+# make sure we aren't looking for excessively massive objects either
+max_primary_mass = 2.2*wc.MSOLAR
+max_component_mass = 1.4*wc.MSOLAR
+
 
 # TODO do consistency checks
 class BinaryTimeWaveformAmpFreqD():
@@ -83,58 +102,55 @@ class BinaryTimeWaveformAmpFreqD():
     def update_intrinsic(self):
         """get amplitude and phase for the waveform model"""
         # amp = np.sqrt(wc.Tobs/(8*wc.Nt*wc.Nf))*self.params[0]
-        amp = self.params[idx_amp]
+        #amp = self.params[idx_amp]
         costh = self.params[idx_costh]  # np.cos(np.pi/2-self.params[idx_theta] )
         phi = self.params[idx_phi]
         freq0 = self.params[idx_freq0]
-        freqD = self.params[idx_freqD]
-        freqDD = self.params[idx_freqDD]
-        #freqDDD = self.params[idx_freqDDD]
         # cosi = self.params[idx_cosi]#np.cos(self.params[idx_incl])
         phi0 = self.params[idx_phi0]  # +np.pi
         # psi = self.params[idx_psi]
         dl = np.exp(self.params[idx_logdl])
-        m_total = self.params[idx_mtotal]
-        m_chirp = self.params[idx_mchirp]
-        I_wd = self.params[idx_iwd]
 
-        freqDDD = (19/3) * ((freqD * freqDD) / freq0) 
+        if USE_MASS_PARAMETERS:
+            m_total = self.params[idx_mtotal]
+            m_chirp = self.params[idx_mchirp]
 
-        #define mass parameterizations
-        eta = (m_chirp/m_total)**(5/3)
-        dm = (1-(4*eta))**(1/2)
-        mass1 = m_total * (1 + dm) / 2
-        mass2 = m_total * (1 - dm) / 2
-        amp_1PN = np.pi**(2/3) * m_chirp**(5/3) * freq0**(2/3) / dl
-        fdot_pp = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3)
-        I_orb = m_chirp**(5/3) / ((np.pi*freq0)**(4/3))
+            mass1, mass2 = get_component_masses(m_chirp,m_total)
+
+            assert mass1 >= min_primary_mass
+            assert mass2 >= min_component_mass
+
+            I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
+
+            amp_1PN = np.pi**(2/3) * m_chirp**(5/3) * freq0**(2/3) / dl
+            fdot_pp = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3)
+            I_orb = m_chirp**(5/3) / ((np.pi*freq0)**(4/3))
+
+            # #physical model - tides
+            freqD = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))) )
+            freqDD = (11/3)*(fdot_pp**2/freq0 ) * ( 1 + (((26/11)*(3*I_wd/I_orb)) / (1 - (3*I_wd/I_orb))) + ( (19/11) * ((3*I_wd/I_orb) / (1 - (3*I_wd/I_orb)))**2 ))
+        else:
+            freqD = self.params[idx_freqD]
+            freqDD = self.params[idx_freqDD]
+
+        freqDDD = (19/3) * ((freqD * freqDD) / freq0)
+
 
         #physical model constants - 1PN
         # freqD_1PN = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*m_total*freq0)**(2/3))
         # freqDD_1PN = 96/5*np.pi**(8/3)*freq0**(8/3)*m_chirp**(5/3)*freqD_1PN * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*m_total*freq0)**(2/3))
         # freqDDD_1PN = (19/3) * ((freqD_1PN * freqDD_1PN) / freq0) * ( 1 + (2/19) * (fdot_pp / freqD_1PN) * (1 + ((13/3)*(freqD_1PN**2 / (freq0 * freqDD_1PN)))) * (((743/1344)-(11*eta/16))*((8*np.pi*m_total*freq0)**(2/3))) )
-        
-        # #physical model - tides
-        I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
-        freqD_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))) )
-        freqDD_tides = (11/3)*(fdot_pp**2/freq0 ) * ( 1 + (((26/11)*(3*I_wd/I_orb)) / (1 - (3*I_wd/I_orb))) + ( (19/11) * ((3*I_wd/I_orb) / (1 - (3*I_wd/I_orb)))**2 ))
-        freqDDD_tides = (19/3) * ((freqD_tides * freqDD_tides) / freq0) 
+
 
         # #physical model - tides, Moment of Inertia, Chirp Mass
         #freqD_tides_Iwd = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))) )
         #freqDD_tides_Iwd = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (freqD_tides_Iwd/freq0) * ( ((11/3) - (7*I_wd*(np.pi*freq0)**(4/3) / m_chirp**(5/3))) / ((1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))**2))
-        #freqDDD_tides_Iwd = (19/3) * ((freqD_tides_Iwd * freqDD_tides_Iwd) / freq0) 
+        #freqDDD_tides_Iwd = (19/3) * ((freqD_tides_Iwd * freqDD_tides_Iwd) / freq0)
 
         # #reference times for each model
-        #TTRef = TaylorT3_ref_time_match(m_total, m_chirp, freq0, TaylorF2_ref_time_guess(m_total,m_chirp,freq0))
-        TTRef_Iwd = TaylorT3_ref_time_match(1.3*wc.MSOLAR, m_chirp, freq0, TaylorF2_ref_time_guess(1.3*wc.MSOLAR,m_chirp,freq0))
-
         kv, _, _ = get_tensor_basis(phi, costh)  # TODO check intrinsic extrinsic separation here
         get_xis_inplace(kv, self.TTs, self.xas, self.yas, self.zas, self.xis)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds ,amp, phi0, freq0, freqD, freqDD, freqDDD, 0, self.xis, self.TTs.size)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_1PN, freqDD_1PN, freqDDD_1PN,TTRef, self.xis, self.TTs.size)
-        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_tides, freqDD_tides, freqDDD_tides, 0, self.xis, self.TTs.size)
-        #AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD_tides_Iwd, freqDD_tides_Iwd, freqDDD_tides_Iwd, TTRef_Iwd, self.xis, self.TTs.size)
+        AmpFreqDeriv_inplace(self.AmpTs, self.PPTs, self.FTs, self.FTds, self.FTdds, amp_1PN, phi0, freq0, freqD, freqDD, freqDDD, 0., self.xis, self.TTs.size)
 #
     def update_extrinsic(self):
         """update the internal state for the extrinsic parts of the parameters"""
@@ -152,8 +168,66 @@ class BinaryTimeWaveformAmpFreqD():
         ExtractAmpPhase_inplace(self.AET_AmpTs, self.AET_PPTs, self.AET_FTs, self.AET_FTds,
                                 self.AmpTs, self.PPTs, self.FTs, self.FTds, self.RRs, self.IIs, self.dRRs, self.dIIs, self.NT)
 
+@njit()
+def get_eta(m_chirp,m_total):
+    """get eta, with some checks, given a chirp mass and total mass"""
+    #define mass parameterizations
+    assert m_chirp > 0.
+    assert m_total > 0.
+
+    eta = (m_chirp/m_total)**(5/3)
+
+    # eta must be <= 0.25, so check that it is
+    # fix etas that might be just slightly off due to numerical errors
+    if 0.25 <= eta < 0.25 + 1.e-14:
+        eta = 0.25
+
+    # do not attempt to calculate anything if eta is way outside of the physical range
+    #if eta > 0.25 or eta <= 0.:
+    #    print(m_chirp, m_total, eta)
+    #    raise ValueError('Invalid chirp mass and total mass combination requested')
+
+    return eta
+
+@njit()
+def get_component_masses(m_chirp, m_total):
+    """get the component masses given the chirp mass and total mass, with some checks"""
+    eta = get_eta(m_chirp,m_total)
+
+    if eta == 0.25:
+        # prevent the square root from misbehaving
+        dm = 0.
+    else:
+        dm = (1-(4*eta))**(1/2)
+
+
+    mass1 = m_total * (1 + dm) / 2
+    mass2 = m_total * (1 - dm) / 2
+
+
+    # mass2 > mass1 can't happen
+    if mass2 > mass1:
+        assert False
+        mass2 = mass1
+
+    return mass1, mass2
+
+@njit()
+def get_freqF_masses(freq0, m_chirp, m_total):
+    """get the predicted final frequency at the end of observing given the initial frequency, chirp mass, and total mass"""
+    mass1, mass2 = get_component_masses(m_chirp, m_total)
+    I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) )
+    fdot_pp = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3)
+    I_orb = m_chirp**(5/3) / ((np.pi*freq0)**(4/3))
+    FD0 = 96/5*np.pi**(8/3)*freq0**(11/3)*m_chirp**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/m_chirp**(5/3)))) )
+    FDD0 = (11/3)*(fdot_pp**2/freq0 ) * ( 1 + (((26/11)*(3*I_wd/I_orb)) / (1 - (3*I_wd/I_orb))) + ( (19/11) * ((3*I_wd/I_orb) / (1 - (3*I_wd/I_orb)))**2 ))
+    FDDD0 = (19/3) * ((FD0 * FDD0) / freq0)
+    tmax = wc.Nt*wc.DT
+    return freq0+FD0*tmax + (1/2)*FDD0*tmax**2 + (1/6)*FDDD0*tmax**3
+
+
 def TruthParamsCalculator(freq0, mass1, mass2, dl):
-    #calculate frequencies using physical models and input them as truth params for the code
+    """calculate frequencies using physical models and input them as truth params for the code"""
     I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) ) # this is in s^3
     chirpMass = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
     totalMass = mass1 + mass2
@@ -228,39 +302,6 @@ def ExtractAmpPhase_inplace(AET_Amps, AET_Phases, AET_FTs, AET_FTds, AA, PP, FT,
         for itrc in range(0, wc.NC):
             AET_FTds[itrc, n] = (AET_FTs[itrc, n+1]-AET_FTs[itrc, n-1]+FT_shift)/(2*wc.DT)+FTd_shift
 
-@njit()
-def TaylorF2_ref_time_guess(Mt,Mc,FI):
-    """This is the TaylorF2 model to 2PN order. DOI: 10.1103/PhysRevD.80.084043"""
-    eta = (Mc/Mt)**(5/3)
-
-    if eta>=0.25:
-        delta = 0.
-    else:
-        delta = np.sqrt(1-4*eta) #(m1-m2)/Mt
-
-
-    c0 = 3/(128*eta)
-    c1 = 20/9*(743/336+11/4*eta)
-
-
-    p0 = 5*c0*Mt/6
-    p1 = 3/5*c1
-
-    nuI = (np.pi*Mt*FI)**(1/3)
-    return p0/nuI**8*(1+p1*nuI**2)*nuI**6
-
-def TaylorT3_ref_time_match(Mt,Mc,f_goal,t_guess):
-    """This is the TaylorT3 model to 1PN order. DOI: 10.1103/PhysRevD.80.084043"""
-    eta = (Mc/Mt)**(5/3)
-
-    c0 = 1/(8*np.pi*Mt)
-    c1 = (743/2688+11/32*eta)
-
-    f_func = lambda th: f_goal-(c0*th**3*(1+c1*th**2))
-    th_guess =  (eta*t_guess/(5*Mt))**(-1/8)
-    th_ref = fsolve(f_func,th_guess)[0]
-    TTRef = (5*Mt)/(eta*th_ref**8)
-    return TTRef
 
 @njit()
 def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS, Amp, phi0, FI, FD0, FDD0, FDDD0, TTRef, TS, NT):
