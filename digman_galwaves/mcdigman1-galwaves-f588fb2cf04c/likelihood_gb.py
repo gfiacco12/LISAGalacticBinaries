@@ -21,7 +21,7 @@ import mcmc_params as mcp
 from ra_waveform_time import BinaryTimeWaveformAmpFreqD
 import ra_waveform_time as rwt
 
-fisher_eps_default = np.array([1.e-25, 1.e-1, 1.e-3, 1.e-6, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-15,1.e-12,1.e-12])
+fisher_eps_default = np.array([1.e-25, 1.e-0, 1.e-3, 1.e-6, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4])
 #eps for alpha = 1.e0, beta = 1.e-3, delta = 1.e-6, 1.e-10, 1.e-19, 1.e-30,
 
 def get_noisy_gb_likelihood(params_fid, noise_AET_dense, sigma_prior_lim, strategy_params):
@@ -286,22 +286,11 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     low_lims[rwt.idx_mtotal] = max(params_fid[rwt.idx_mtotal]-2*sigma_prior_lim*sigmas[rwt.idx_mtotal], 0)
     high_lims[rwt.idx_mtotal] = params_fid[rwt.idx_mtotal]+2*sigma_prior_lim*sigmas[rwt.idx_mtotal]
 
-    #moment of inertia priors (in s)
-    low_lims[rwt.idx_iwd] = 0.5*params_fid[rwt.idx_iwd]
-    high_lims[rwt.idx_iwd] = 1.5*params_fid[rwt.idx_iwd]
-
-    #mass1
-    low_lims[rwt.idx_m1] = 0
-    high_lims[rwt.idx_m1] = 1.4*wc.MSOLAR
-    #mass2
-    low_lims[rwt.idx_m2] = 0
-    high_lims[rwt.idx_m2] = 1.4*wc.MSOLAR
-
     return low_lims, high_lims
 
 
 PARAM_LABELS = [r"$\mathcal{A}$", r"$f_0$", r"$f'$", r"$f''$", r"$D_{L}$",r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
-PLOT_LABELS = [r"$\mathcal{A}$", r"$\alpha$", r"$\beta$", r"$\delta$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$", r'$I_{WD} [gcm^{2}]$', r"$M_{1}$ [$M_{\odot}$]", r"$M_{2}$ [$M_{\odot}$]"] 
+PLOT_LABELS = [r"$\mathcal{A}$", r"$\alpha$", r"$\beta$", r"$\delta$", r"$D_{L}$", r"$M_{T}$ [$M_{\odot}$]", r"$M_{c}$ [$M_{\odot}$]", r"cos$\theta$", r"$\phi$", r"cos$i$", r"$\phi_0$", r"$\psi$"] 
 #, r"$\kappa$"
 
 def get_param_labels():
@@ -354,15 +343,6 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         elif (i == rwt.idx_mchirp):
             samples_got[:, rwt.idx_mchirp] /= wc.MSOLAR
             params_fid_got[rwt.idx_mchirp] /= wc.MSOLAR
-        elif (i == rwt.idx_iwd):
-            samples_got[:, rwt.idx_iwd] /= wc.IWDtoSEC                 # Convert to cgs
-            params_fid_got[rwt.idx_iwd] /= wc.IWDtoSEC
-        elif (i == rwt.idx_m1):
-            samples_got[:, rwt.idx_m1] /= wc.MSOLAR
-            params_fid_got[rwt.idx_m1] /= wc.MSOLAR
-        elif (i == rwt.idx_m2):
-            samples_got[:, rwt.idx_m2] /= wc.MSOLAR
-            params_fid_got[rwt.idx_m2] /= wc.MSOLAR
         
         labels.append(label)
         params_fin.append(params_fid_got[i])

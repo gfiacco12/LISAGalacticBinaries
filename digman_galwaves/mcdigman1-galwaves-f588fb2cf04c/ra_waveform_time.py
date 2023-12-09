@@ -21,9 +21,6 @@ idx_phi = 8
 idx_cosi = 9
 idx_phi0 = 10
 idx_psi = 11
-idx_iwd = 12
-idx_m1 = 13
-idx_m2 = 14
 
 # TODO do consistency checks
 class BinaryTimeWaveformAmpFreqD():
@@ -97,14 +94,11 @@ class BinaryTimeWaveformAmpFreqD():
         dl = np.exp(self.params[idx_logdl])
         m_total = self.params[idx_mtotal]
         m_chirp = self.params[idx_mchirp]
-        I_wd = self.params[idx_iwd]
-        mass1 = self.params[idx_m1]
-        mass2 = self.params[idx_m2]
 
         #freqDDD = (19/3) * ((freqD * freqDD) / freq0) 
         gamma = delta + (11/3)*(beta**2 / alpha)
         kappa = (19/3) * ((beta * gamma) / alpha)
-        t_obs = 4*wc.SECSYEAR
+        t_obs = 4.0*wc.SECSYEAR
         #define mass parameterizations
        # eta = (m_chirp/m_total)**(5/3)
         #dm = (1-(4*eta))**(1/2)
@@ -163,8 +157,6 @@ def TruthParamsCalculator(freq0, mass1, mass2, dl, tobs):
     #1PN
     fdot = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*totalMass*freq0)**(2/3))
     fddot = 96/5*np.pi**(8/3)*freq0**(8/3)*chirpMass**(5/3)*(fdot) * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*totalMass*freq0)**(2/3))
-    fdddot = (19/3) * ((fdot * fddot) / freq0) * ( 1 + ((2/19) * (fdot_pp / fdot) * (1 + ((13/3)*(fdot**2 / (freq0 * fddot)))) * (((743/1344)-(11*eta/16))*((8*np.pi*totalMass*freq0)**(2/3)))) )
-
     amp = np.pi**(2/3) * chirpMass**(5/3) * freq0**(2/3) / dl
 
     #alpha beta gamma calculations
@@ -172,7 +164,7 @@ def TruthParamsCalculator(freq0, mass1, mass2, dl, tobs):
     beta = fdot_tides * (tobs**2)
     gamma = fddot_tides * (tobs**3)
     delta = gamma - (11/3)*(beta**2 / alpha)
-    return fdot, fddot, fdot_tides, fddot_tides, amp, I_wd, alpha, beta, delta
+    return amp, alpha, beta, delta
 
 @njit()
 def ExtractAmpPhase_inplace(AET_Amps, AET_Phases, AET_FTs, AET_FTds, AA, PP, FT, FTd, RRs, IIs, dRRs, dIIs, NT):
@@ -283,8 +275,6 @@ def AmpFreqDeriv_inplace(AS, PS, FS, FDS, FDDS, Amp, phi0, FI, FD0, FDD0, FDDD0,
 def AmpFreqDeriv_inplace_v2(AS, PS, FS, FDS, FDDS, Amp, phi0, ALPHA, BETA, GAMMA, KAPPA, TTRef, TS, NT, T_obs):
     """Get time domain waveform to lowest order, simple constant fdot"""
     # compute the intrinsic frequency, phase and amplitude
-# , FDDD0
-    phiRef = -phi0 - 2*np.pi*(ALPHA / T_obs)*(-TTRef) - np.pi*(BETA /(T_obs**2))*(-TTRef)**2 - (np.pi/3)*(GAMMA/(T_obs**3))*(-TTRef)**3 - (np.pi/12)*(KAPPA/(T_obs**4))*(-TTRef)**4
     for n in range(0, NT):
         t = TS[n]
         FS[n] = (ALPHA / T_obs) + (BETA /(T_obs**2))*(t-TTRef) + (1/2)*(GAMMA/(T_obs**3))*(t-TTRef)**2 + (1/6)*(KAPPA/(T_obs**4))*(t-TTRef)**3

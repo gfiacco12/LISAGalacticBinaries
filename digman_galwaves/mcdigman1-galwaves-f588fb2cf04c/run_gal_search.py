@@ -36,21 +36,19 @@ if __name__ == '__main__':
     # starting variables
     n_chain = 20                     # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin =20000                   # number of iterations to discard as burn in
+    n_burnin =40000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 50000                 # number of samples to store total
+    store_size = 100000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
     T_max = 20.                      # maximum temperature for geometric part of temperature ladder
 
     sigma_prior_lim = 100.              # minimum standard deviations to allow around prior in amplitude, frequency, and frequency derivative
-    fdot, fddot, fdot_tides, fddot_tides, amp, Iwd, alpha, beta, delta = rwt.TruthParamsCalculator(20.e-3, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR, (1*wc.KPCSEC), (4*wc.SECSYEAR)) #not log of DL
+    amp, alpha, beta, delta = rwt.TruthParamsCalculator(20.e-3, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR, (1*wc.KPCSEC), (4.0*wc.SECSYEAR)) #not log of DL
 
-    params_true = np.array([amp, alpha, beta, delta, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6, Iwd, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR])  # true parameters for search -- Add in total mass and chirp mass
-    print(alpha, beta, delta)
-    gamma = delta + (11/3)*(beta**2 / alpha)
-    print(gamma, (19/3) * ((beta * gamma) / alpha))
+    params_true = np.array([amp, alpha, beta, delta, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6])  # true parameters for search -- Add in total mass and chirp mass
+ 
     # note that too many chains starting from the fiducial parameters can make the chain converge slower, if it fails to find secondary modes
     n_true_start = 4              # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)
 
@@ -65,52 +63,6 @@ if __name__ == '__main__':
     print(like_obj.sigmas_in)
     logL_truths = like_obj.get_loglike(params_true)
     print("Log Likelihoods of truth parameters:", logL_truths)
-    # for idx in [rwt.idx_m1, rwt.idx_m2]:
-    #     _param = params_true.copy()
-    #     _param[rwt.idx_m1] += 0.639217
-    #     _param[rwt.idx_m2] += 0.769018
-    #     _LogL = like_obj.get_loglike(_param)
-    #     print("Log like for (m1,m2)=(0.8, 0.53) model", _LogL)
-    # print("New mass1, mass2 =", _param[rwt.idx_m1]/wc.MSOLAR, _param[rwt.idx_m2]/wc.MSOLAR)
-
-
-    # for idx in [rwt.idx_m1, rwt.idx_m2]:
-    #     _params = params_true.copy()
-    #     _params[idx] += like_obj.sigmas_in[idx]
-    #     _logL = like_obj.get_loglike(_params)
-    #     print("Log like for phys model", _logL)
-
-    #fractional change in fD, fDD, Iwd
-    # fdot_pp = 96/5*np.pi**(8/3)*params_true[1]**(11/3)*params_true[6]**(5/3)
-    # I_orb = params_true[6]**(5/3) / ((np.pi*params_true[1])**(4/3))
-    # I_wd = 8.51e-10 * ( (params_true[13]/(0.6*wc.MSOLAR))**(1/3) + (params_true[14]/(0.6*wc.MSOLAR))**(1/3) )
-    # freqD_tides = 96/5*np.pi**(8/3)*params_true[1]**(11/3)*params_true[6]**(5/3) * (1 + ((3*I_wd*(np.pi*params_true[1])**(4/3)/params_true[6]**(5/3)) / (1 - (3*I_wd*(np.pi*params_true[1])**(4/3)/params_true[6]**(5/3)))) )
-    # freqDD_tides = (11/3)*(fdot_pp**2/params_true[1] ) * ( 1 + (((26/11)*(3*I_wd/I_orb)) / (1 - (3*I_wd/I_orb))) + ( (19/11) * ((3*I_wd/I_orb) / (1 - (3*I_wd/I_orb)))**2 ))
-    
-    # deltafD = (freqD_tides - params_true[2]) / params_true[2]
-    # deltafDD = (freqDD_tides - params_true[3] ) / params_true[3] 
-    # deltaIwd = ( I_wd - params_true[12]) / params_true[12]
-    # print("Fractional Change in FD, FDD, Iwd:", deltafD, deltafDD, deltaIwd)
-    # #check waveform models
-    fwt = BinaryTimeWaveformAmpFreqD(params_true.copy(), 0, wc.Nt)
-    data = fwt.AET_FTs[0,:]
-    times = fwt.TTs
-    np.savetxt('AET_FTs_alphabetadelta.txt', data)
-    np.savetxt('times.txt', times)
-
-    #check fractional errors:
-    # dfreqD = like_obj.sigmas_in[2] / params_true[2]
-    # dfreqDD = like_obj.sigmas_in[3] / params_true[3]
-    # dMc = like_obj.sigmas_in[6] / params_true[6]
-    # dIwd = like_obj.sigmas_in[12] / params_true[12]
-    # print("Fractional errors: Fdot=", dfreqD, "Fddot=", dfreqDD, "Mchirp=", dMc, "Iwd=", dIwd)
-
-    # #check fractional prior ranges
-    # prior_freqD = (like_obj.high_lims[2]-like_obj.low_lims[2])/params_true[2]
-    # prior_freqDD = (like_obj.high_lims[3]-like_obj.low_lims[3])/params_true[3]
-    # prior_Mc = (like_obj.high_lims[6]-like_obj.low_lims[6])/params_true[6]
-    # prior_Iwd = (like_obj.high_lims[12]-like_obj.low_lims[12])/params_true[12]
-    # print("Fractional priors: Fdot=", prior_freqD, "Fddot=", prior_freqDD, "Mchirp=", prior_Mc, "Iwd=", prior_Iwd)
 
     # create the starting samples
     starting_samples = np.zeros((T_ladder.n_chain, like_obj.n_par))
@@ -160,10 +112,6 @@ if __name__ == '__main__':
     #plotChains(mcc.logL_means)
 
     #plt.semilogx(T_ladder.Ts,mcc.logL_vars[-1]*T_ladder.betas**2)
-
-    # plotAutoCorrelationLength(samples_flattened[:,1], 1000, "Freq0")
-    # plotAutoCorrelationLength(samples_flattened[:,6], 1000, "Mchirp")
-    # plotAutoCorrelationLength(samples_flattened[:,12], 1000, "Iwd")
 
     tf = perf_counter()
 
