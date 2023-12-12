@@ -34,11 +34,11 @@ if __name__ == '__main__':
     t0 = perf_counter()
 
     # starting variables
-    n_chain = 20                     # number of total chains for parallel tempering
+    n_chain = 50                     # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin =40000                   # number of iterations to discard as burn in
+    n_burnin =20000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 100000                 # number of samples to store total
+    store_size = 50000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
@@ -73,7 +73,16 @@ if __name__ == '__main__':
             print(like_obj.get_loglike(starting_samples[itrt]))
         else:
             # use a prior draw
-            starting_samples[itrt] = like_obj.prior_draw()
+            num_attempts = 0
+            while True:
+                starting_samples[itrt] = like_obj.prior_draw()
+                current_sample = starting_samples[itrt]
+                freq0 = alpha / (4.*wc.SECSYEAR)
+                is_physical = betadelta_m1m2_check(current_sample[2], current_sample[3], freq0, (4.*wc.SECSYEAR), current_sample[6], current_sample[5])
+                if is_physical == True:
+                    break
+                num_attempts += 1
+                assert num_attempts < 15
     
     # create the overarching proposal manager object
     proposal_manager = get_default_proposal_manager(T_ladder, like_obj, strategy_params, starting_samples)
@@ -102,8 +111,7 @@ if __name__ == '__main__':
     #print("sigma scales:", mcc.proposal_manager.managers[0].sigma_scales)
     # get flattened samples for plotting
     samples_flattened, logLs_flattened, logLs_unflattened = mcc.get_stored_flattened(corr_sum.restrict_n_burnin(mcc, n_burnin)) 
-    print(samples_flattened[0:30,2])
-    print(samples_flattened[0:30,3])
+            
     #makeHistogramofLogLike(logLs_flattened)
 
     #makeScatterPlot(logLs_flattened, samples_flattened[:,6])
@@ -124,6 +132,7 @@ if do_corner_plot:
     import corner
     # reformat the samples to make the plots look nicer
     samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_amp, rwt.idx_alpha, rwt.idx_beta, rwt.idx_delta])
+    np.savetxt('beta delta mass check 30000.txt', samples_format)
     # create the corner plot figure
     fig = plt.figure(figsize=(10, 7.5))
     figure = corner.corner(samples_format, fig=fig, bins=25, hist_kwargs={"density": True}, show_titles=True, title_fmt=None,

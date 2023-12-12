@@ -198,12 +198,13 @@ def correct_bounds(params_in, low_lims, high_lims, do_wrap=True):
 
 
 @njit()
-def prior_draw(low_lims, high_lims):
+def prior_draw(low_lims, high_lims, retries=0):
     """do a prior draw"""
     n_par = low_lims.size
     draw = np.zeros(n_par)
     for itrp in range(n_par):
         draw[itrp] = np.random.uniform(low_lims[itrp], high_lims[itrp])
+    
     return draw
 
 
