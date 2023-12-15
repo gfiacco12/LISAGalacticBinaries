@@ -34,7 +34,7 @@ if __name__ == '__main__':
     t0 = perf_counter()
 
     # starting variables
-    n_chain = 50                     # number of total chains for parallel tempering
+    n_chain = 20                 # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
     n_burnin =20000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
@@ -78,12 +78,12 @@ if __name__ == '__main__':
                 starting_samples[itrt] = like_obj.prior_draw()
                 current_sample = starting_samples[itrt]
                 freq0 = alpha / (4.*wc.SECSYEAR)
-                is_physical = betadelta_m1m2_check(current_sample[2], current_sample[3], freq0, (4.*wc.SECSYEAR), current_sample[6], current_sample[5])
+                is_physical = betadelta_m1m2_check(current_sample[2], current_sample[3], freq0, (4.*wc.SECSYEAR), params_true[6], params_true[5])
                 if is_physical == True:
                     break
                 num_attempts += 1
-                assert num_attempts < 15
-    
+                assert num_attempts < 100
+
     # create the overarching proposal manager object
     proposal_manager = get_default_proposal_manager(T_ladder, like_obj, strategy_params, starting_samples)
 
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     print('True Template SNR: ', like_obj.get_snr(params_true))
 
     # create the chain object
-    mcc = PTMCMCChain(T_ladder, like_obj, strategy_params, block_size, store_size, starting_samples=starting_samples)
+    mcc = PTMCMCChain(T_ladder, like_obj, strategy_params, block_size, store_size, starting_samples=starting_samples, params_true=params_true)
 
     t_init_end = perf_counter()
     print('all objects initialized in ', t_init_end-t0, 's')
@@ -132,7 +132,7 @@ if do_corner_plot:
     import corner
     # reformat the samples to make the plots look nicer
     samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_amp, rwt.idx_alpha, rwt.idx_beta, rwt.idx_delta])
-    np.savetxt('beta delta mass check 30000.txt', samples_format)
+    np.savetxt('beta delta mass check 50000 v2.txt', samples_format)
     # create the corner plot figure
     fig = plt.figure(figsize=(10, 7.5))
     figure = corner.corner(samples_format, fig=fig, bins=25, hist_kwargs={"density": True}, show_titles=True, title_fmt=None,

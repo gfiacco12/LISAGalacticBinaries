@@ -1,7 +1,9 @@
 """C 2023 Matthew C. Digman
 Module with the overall PTMCMC Chain object"""
+from graph_helper import betadelta_m1m2_check
 import numpy as np
 from numba import njit
+import wdm_const as wc
 
 from DTMCMC.proposal_manager_helper import get_default_proposal_manager
 
@@ -13,7 +15,7 @@ class PTMCMCChain():
 
     def __init__(self, T_ladder_in, like_obj, strategy_params, block_size, store_size,
                  tracker_manager=None, proposal_manager=None, starting_samples=None,
-                 store_thin=1, n_record=-1):
+                 store_thin=1, n_record=-1,params_true=[]):
         """create the chain object
         inputs:
             block_size: scalar integer, the number of MCMC iterations to do per block
@@ -44,6 +46,7 @@ class PTMCMCChain():
         self.Ts = self.T_ladder.Ts
         self.n_chain = self.T_ladder.n_chain
         self.n_cold = self.T_ladder.n_cold
+        self.params_true = params_true
 
         # how many chains to save in the stored block, default is n_cold
         if n_record == -1:
@@ -133,7 +136,7 @@ class PTMCMCChain():
 
     def block_main(self):
         """the main body of the block with the mcmc step"""
-        advance_block_ptmcmc(self.T_ladder, self.logLs, self.samples, self.chain_track, self.proposal_manager, self.like_obj, self.tracker_manager)
+        advance_block_ptmcmc(self.T_ladder, self.logLs, self.samples, self.chain_track, self.proposal_manager, self.like_obj, self.tracker_manager, self.params_true)
 
     def block_end(self):
         """things to execute after the main mcmc body of the block, like clean up recalculating fisher matrices, and storing results
@@ -209,7 +212,7 @@ def store_sample_helper(samples_store, logLs_store, samples_block, logLs_block, 
     return store_idx, store_counter
 
 
-def advance_block_ptmcmc(T_ladder, logLs, samples, chain_track, proposal_manager, like_obj, tracker_manager):
+def advance_block_ptmcmc(T_ladder, logLs, samples, chain_track, proposal_manager, like_obj, tracker_manager, params_true):
     """advance an entire block in the ptmcmc chain, alternating regular and exchange proposals"""
     block_size = samples.shape[0]-1
 
@@ -219,7 +222,7 @@ def advance_block_ptmcmc(T_ladder, logLs, samples, chain_track, proposal_manager
             proposal_manager.exchange_manager.do_ptmcmc_exchange(itrb, samples, logLs, T_ladder, tracker_manager.exchange_tracker, chain_track)
         else:
             # if the index is a normal jump
-            advance_step_ptmcmc(itrb, samples, logLs, T_ladder, tracker_manager.accept_record, proposal_manager, like_obj)
+            advance_step_ptmcmc(itrb, samples, logLs, T_ladder, tracker_manager.accept_record, proposal_manager, like_obj, params_true)
             chain_track[itrb, :] = chain_track[itrb-1, :]         # track the indexes of the chains, which only change on exchange steps
 
         proposal_manager.post_step_update(samples[itrb])        # record differential evolution buffer
@@ -227,24 +230,27 @@ def advance_block_ptmcmc(T_ladder, logLs, samples, chain_track, proposal_manager
     return samples
 
 
-def advance_step_ptmcmc(itrb, samples, logLs, T_ladder, accept_record, proposal_manager, like_obj):
+def advance_step_ptmcmc(itrb, samples, logLs, T_ladder, accept_record, proposal_manager, like_obj, params_true):
     """advance a single step step in the ptmcmc chain"""
     n_chain = T_ladder.n_chain
     betas = T_ladder.betas
 
     for itrt in range(0, n_chain):
-        new_point, density_fac, idx_jump, success = proposal_manager.dispatch_jump(samples[itrb-1, itrt], itrt)
+        new_point, density_fac, idx_jump, is_success = proposal_manager.dispatch_jump(samples[itrb-1, itrt], itrt)
 
-        if success:
+        # if the point failed, just set the likelihood to negative infinity so it won't be accepted
+        logL_new = -np.inf
+        if is_success:
             # skip likelihood evaluation if proposal is marked as a failure
             new_point = like_obj.correct_bounds(new_point)   # make sure the point is legal if possible
-            success = like_obj.check_bounds(new_point)       # check that the point was correctly made legal
+            is_success = like_obj.check_bounds(new_point)       # check that the point was correctly made legal
 
-        if success:
-            # if the point passes, get the likelihood
-            logL_new = like_obj.get_loglike(new_point)       # get the likelihood
-        else:
-            logL_new = -np.inf                                 # if the point failed, just set the likelihood to negative infinity so it won't be accepted
+            alpha = new_point[1]
+            freq0 = alpha / (4.*wc.SECSYEAR)
+            is_physical = betadelta_m1m2_check(new_point[2], new_point[3], freq0, (4.*wc.SECSYEAR), params_true[6], params_true[5])    
+            if is_physical:
+                # if the point passes, get the likelihood
+                logL_new = like_obj.get_loglike(new_point)       # get the likelihood
 
         test = np.log(np.random.uniform(0., 1.))             # get the test draw to determine if we accept the point
         if betas[itrt]*(logL_new-logLs[itrb-1, itrt])+density_fac > test:
