@@ -1,0 +1,298 @@
+nohup: ignoring input
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:76: RuntimeWarning: invalid value encountered in scalar power
+  eta = ( (chirpMass/MSOLAR) / (totalMass/MSOLAR) )**(5/3)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:77: RuntimeWarning: invalid value encountered in scalar power
+  x = (np.pi*freq0*totalMass)**(2/3)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:88: RuntimeWarning: invalid value encountered in scalar power
+  I_wd = 8.51e-10 * ((mass1/(0.6*MSOLAR))**(1/3) + (mass2/(0.6*MSOLAR))**(1/3))
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:92: RuntimeWarning: invalid value encountered in scalar power
+  r1 = 10**9 * (mass1/(0.6 * MSOLAR))**(-1/3) * (1/CLIGHT)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:93: RuntimeWarning: invalid value encountered in scalar power
+  r2 = 10**9 * (mass2/(0.6 * MSOLAR))**(-1/3) * (1/CLIGHT)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/DTMCMC/fisher_manager.py:94: RuntimeWarning: invalid value encountered in divide
+  self.jump_probs = (self.jump_weights.T/self.jump_weights.sum(axis=1)).T  # the normalized conditional jump probabilities
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/DTMCMC/fisher_manager.py:94: RuntimeWarning: invalid value encountered in divide
+  self.jump_probs = (self.jump_weights.T/self.jump_weights.sum(axis=1)).T  # the normalized conditional jump probabilities
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:76: RuntimeWarning: invalid value encountered in scalar power
+  eta = ( (chirpMass/MSOLAR) / (totalMass/MSOLAR) )**(5/3)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:77: RuntimeWarning: invalid value encountered in scalar power
+  x = (np.pi*freq0*totalMass)**(2/3)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:88: RuntimeWarning: invalid value encountered in scalar power
+  I_wd = 8.51e-10 * ((mass1/(0.6*MSOLAR))**(1/3) + (mass2/(0.6*MSOLAR))**(1/3))
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:92: RuntimeWarning: invalid value encountered in scalar power
+  r1 = 10**9 * (mass1/(0.6 * MSOLAR))**(-1/3) * (1/CLIGHT)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:93: RuntimeWarning: invalid value encountered in scalar power
+  r2 = 10**9 * (mass2/(0.6 * MSOLAR))**(-1/3) * (1/CLIGHT)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:76: RuntimeWarning: invalid value encountered in scalar power
+  eta = ( (chirpMass/MSOLAR) / (totalMass/MSOLAR) )**(5/3)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:77: RuntimeWarning: invalid value encountered in scalar power
+  x = (np.pi*freq0*totalMass)**(2/3)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:88: RuntimeWarning: invalid value encountered in scalar power
+  I_wd = 8.51e-10 * ((mass1/(0.6*MSOLAR))**(1/3) + (mass2/(0.6*MSOLAR))**(1/3))
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:92: RuntimeWarning: invalid value encountered in scalar power
+  r1 = 10**9 * (mass1/(0.6 * MSOLAR))**(-1/3) * (1/CLIGHT)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:93: RuntimeWarning: invalid value encountered in scalar power
+  r2 = 10**9 * (mass2/(0.6 * MSOLAR))**(-1/3) * (1/CLIGHT)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:79: RuntimeWarning: invalid value encountered in scalar power
+  dm = (1-(4*eta))**(1/2)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:98: RuntimeWarning: invalid value encountered in sqrt
+  lam = (8/13) * ((1 + 7*eta - 31*(eta**2))*(lam1 + lam2) + np.sqrt(1 - 4*eta)*(1 + 9*eta - 11*(eta**2))*(lam1 - lam2))
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:76: RuntimeWarning: invalid value encountered in scalar power
+  eta = ( (chirpMass/MSOLAR) / (totalMass/MSOLAR) )**(5/3)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:77: RuntimeWarning: invalid value encountered in scalar power
+  x = (np.pi*freq0*totalMass)**(2/3)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:88: RuntimeWarning: invalid value encountered in scalar power
+  I_wd = 8.51e-10 * ((mass1/(0.6*MSOLAR))**(1/3) + (mass2/(0.6*MSOLAR))**(1/3))
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:92: RuntimeWarning: invalid value encountered in scalar power
+  r1 = 10**9 * (mass1/(0.6 * MSOLAR))**(-1/3) * (1/CLIGHT)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:93: RuntimeWarning: invalid value encountered in scalar power
+  r2 = 10**9 * (mass2/(0.6 * MSOLAR))**(-1/3) * (1/CLIGHT)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:79: RuntimeWarning: invalid value encountered in scalar power
+  dm = (1-(4*eta))**(1/2)
+/home/grace/repos/LISAGalacticBinaries/digman_galwaves/mcdigman1-galwaves-f588fb2cf04c/graph_helper.py:98: RuntimeWarning: invalid value encountered in sqrt
+  lam = (8/13) * ((1 + 7*eta - 31*(eta**2))*(lam1 + lam2) + np.sqrt(1 - 4*eta)*(1 + 9*eta - 11*(eta**2))*(lam1 - lam2))
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+using mkl fft
+Filter length (seconds) 9.855000e+05
+dt=15.03753662109375s Tobs=4.0
+full filter bandwidth 1.217656e-05  samples 12
+coeffs/WDMcoeffs_Nsf=150_mult=8_Nfd=10_Nf=4096_Nt=2048_dt=15.03753662109375_dfdot=0.1_Nfd_neg5_fast.h5
+cache checked and missed
+norm=101386.08318891028
+6.159375e+04 8.11770674784373e-06 8.11770674784373e-06 -3.294858e-12 3.294858e-12
+loop start time  0.08764934539794922 s
+got full evcs in 2.856660 s
+2522880.0 2986.0639151695955 1.2579866056840032
+nrm instrument 7770.223141634555
+getting gb likelihood
+[4.70522978e-25 1.41541325e-03 6.81003180e-04 2.39662405e-03
+ 2.50000000e-01 2.50000000e-01 2.50000000e-01 8.86472061e-04
+ 9.02163004e-04 5.32691654e-04 1.00035961e-03 4.73097612e-04]
+Log Likelihoods of truth parameters: 498716.71326195274
+[110 120 121 210 211 220 221 300]
+Chain parameters 2 2 50000 1000 200000 5000 20.0
+True Template SNR:  998.7158887911552
+[110 120 121 210 211 220 221 300]
+all objects initialized in  5.6260393634438515 s
+fisher update 0
+fisher update 1000
+fisher update 2000
+fisher update 3000
+fisher update 4000
+fisher update 5000
+fisher update 6000
+fisher update 7000
+fisher update 8000
+fisher update 9000
+fisher update 10000
+fisher update 11000
+fisher update 12000
+fisher update 13000
+fisher update 14000
+fisher update 15000
+fisher update 16000
+fisher update 17000
+fisher update 18000
+fisher update 19000
+fisher update 20000
+fisher update 21000
+fisher update 22000
+fisher update 23000
+fisher update 24000
+fisher update 25000
+fisher update 26000
+fisher update 27000
+fisher update 28000
+fisher update 29000
+fisher update 30000
+fisher update 31000
+fisher update 32000
+fisher update 33000
+fisher update 34000
+fisher update 35000
+fisher update 36000
+fisher update 37000
+fisher update 38000
+fisher update 39000
+fisher update 40000
+fisher update 41000
+fisher update 42000
+fisher update 43000
+fisher update 44000
+fisher update 45000
+fisher update 46000
+fisher update 47000
+fisher update 48000
+fisher update 49000
+fisher update 50000
+fisher update 51000
+fisher update 52000
+fisher update 53000
+fisher update 54000
+fisher update 55000
+fisher update 56000
+fisher update 57000
+fisher update 58000
+fisher update 59000
+fisher update 60000
+fisher update 61000
+fisher update 62000
+fisher update 63000
+fisher update 64000
+fisher update 65000
+fisher update 66000
+fisher update 67000
+fisher update 68000
+fisher update 69000
+fisher update 70000
+fisher update 71000
+fisher update 72000
+fisher update 73000
+fisher update 74000
+fisher update 75000
+fisher update 76000
+fisher update 77000
+fisher update 78000
+fisher update 79000
+fisher update 80000
+fisher update 81000
+fisher update 82000
+fisher update 83000
+fisher update 84000
+fisher update 85000
+fisher update 86000
+fisher update 87000
+fisher update 88000
+fisher update 89000
+fisher update 90000
+fisher update 91000
+fisher update 92000
+fisher update 93000
+fisher update 94000
+fisher update 95000
+fisher update 96000
+fisher update 97000
+fisher update 98000
+fisher update 99000
+fisher update 100000
+fisher update 101000
+fisher update 102000
+fisher update 103000
+fisher update 104000
+fisher update 105000
+fisher update 106000
+fisher update 107000
+fisher update 108000
+fisher update 109000
+fisher update 110000
+fisher update 111000
+fisher update 112000
+fisher update 113000
+fisher update 114000
+fisher update 115000
+fisher update 116000
+fisher update 117000
+fisher update 118000
+fisher update 119000
+fisher update 120000
+fisher update 121000
+fisher update 122000
+fisher update 123000
+fisher update 124000
+fisher update 125000
+fisher update 126000
+fisher update 127000
+fisher update 128000
+fisher update 129000
+fisher update 130000
+fisher update 131000
+fisher update 132000
+fisher update 133000
+fisher update 134000
+fisher update 135000
+fisher update 136000
+fisher update 137000
+fisher update 138000
+fisher update 139000
+fisher update 140000
+fisher update 141000
+fisher update 142000
+fisher update 143000
+fisher update 144000
+fisher update 145000
+fisher update 146000
+fisher update 147000
+fisher update 148000
+fisher update 149000
+fisher update 150000
+fisher update 151000
+fisher update 152000
+fisher update 153000
+fisher update 154000
+fisher update 155000
+fisher update 156000
+fisher update 157000
+fisher update 158000
+fisher update 159000
+fisher update 160000
+fisher update 161000
+fisher update 162000
+fisher update 163000
+fisher update 164000
+fisher update 165000
+fisher update 166000
+fisher update 167000
+fisher update 168000
+fisher update 169000
+fisher update 170000
+fisher update 171000
+fisher update 172000
+fisher update 173000
+fisher update 174000
+fisher update 175000
+fisher update 176000
+fisher update 177000
+fisher update 178000
+fisher update 179000
+fisher update 180000
+fisher update 181000
+fisher update 182000
+fisher update 183000
+fisher update 184000
+fisher update 185000
+fisher update 186000
+fisher update 187000
+fisher update 188000
+fisher update 189000
+fisher update 190000
+fisher update 191000
+fisher update 192000
+fisher update 193000
+fisher update 194000
+fisher update 195000
+fisher update 196000
+fisher update 197000
+fisher update 198000
+fisher update 199000
+Acceptance Summary:
+ Temperature  DE scale full   DE big full     prior full     
+1.000000e+00  1.0000000       1.0000000       1.0000000      
+overall exchange rate, no cold exchange rate, no cold nearest neighbor exchange rate 1.0 nan nan
+advanced in  54.43114506080747 s
+logL never burned in
+last two Ts 1.0 1.0
+logL burns [-1]
+0
+2 2
+correlation efficiencies +7.72874e-01 +7.54598e-01 +7.64783e-01 +7.57308e-01 +7.73020e-01 +7.55228e-01 +7.54330e-01 +7.58988e-01 +9.16502e-01 +7.58171e-01 +9.06331e-01 +8.93008e-01
+empirical   efficiencies +7.38092e-01 +8.39834e-01 +8.94133e-01 +7.11557e-01 +8.36908e-01 +7.48761e-01 +8.25831e-01 +8.25219e-01 +6.95778e-01 +8.34361e-01 +8.26154e-01 +1.23584e+00
+mean correlation efficiency 7.97095e-01
+mean empirical   efficiency 8.34372e-01
+overall effective sample sizes: [110714.55239861 125975.92572449 134120.89455447 106734.21538307
+ 125536.96547464 112314.92027362 123875.51629304 123783.67972735
+ 104367.45770766 125155.01090706 123923.89021179 185376.90496711]
+best estimate of autocorrelation lengths:  1.29374147e+00 1.33001534e+00 1.30583806e+00 1.32110304e+00 1.29151409e+00 1.32470953e+00 1.32985738e+00 1.33193728e+00 1.09248230e+00 1.31844532e+00 1.10387434e+00 1.12118931e+00
+full search time  61.52115446701646s
+['$10^{22}$$\\mathcal{A}$', '$\\alpha$', '$\\beta$', '$\\delta$']
+90.89user 2.37system 1:08.70elapsed 135%CPU (0avgtext+0avgdata 1652608maxresident)k
+0inputs+59360outputs (1major+641782minor)pagefaults 0swaps
