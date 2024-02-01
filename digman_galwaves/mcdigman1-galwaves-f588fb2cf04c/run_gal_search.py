@@ -145,4 +145,5 @@ if do_corner_plot:
     fig.subplots_adjust(wspace=0., hspace=0., left=0.05, top=0.95, right=0.99, bottom=0.05)
     for ax in figure.get_axes():
         ax.tick_params(which='both', direction='in', bottom=True, top=True, left=True, right=True, labelsize=6)
-    plt.show()
+    plt.show('prior_test.png')
+    plt.savefig
