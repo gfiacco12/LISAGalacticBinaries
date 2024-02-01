@@ -34,23 +34,23 @@ if __name__ == '__main__':
     t0 = perf_counter()
 
     # starting variables
-    n_chain = 20                 # number of total chains for parallel tempering
+    n_chain = 2                 # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin =20000                   # number of iterations to discard as burn in
+    n_burnin =50000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 50000                 # number of samples to store total
+    store_size = 200000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
     T_max = 20.                      # maximum temperature for geometric part of temperature ladder
 
     sigma_prior_lim = 100.              # minimum standard deviations to allow around prior in amplitude, frequency, and frequency derivative
-    amp, alpha, beta, delta = rwt.TruthParamsCalculator(20.e-3, 0.7*wc.MSOLAR, 0.6*wc.MSOLAR, (1*wc.KPCSEC), (4.0*wc.SECSYEAR)) #not log of DL
+    amp, alpha, beta, delta = rwt.TruthParamsCalculator(20.e-3, 0.8*wc.MSOLAR, 0.6*wc.MSOLAR, (2*wc.KPCSEC), (4.0*wc.SECSYEAR)) #not log of DL
 
-    params_true = np.array([amp, alpha, beta, delta, np.log(1*wc.KPCSEC), 1.3*wc.MSOLAR, 0.5638*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6])  # true parameters for search -- Add in total mass and chirp mass
- 
+    params_true = np.array([amp, alpha, beta, delta, np.log(2*wc.KPCSEC), 1.4*wc.MSOLAR, 0.6018927820922144*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6])  # true parameters for search -- Add in total mass and chirp mass
+    print(alpha, beta, delta)
     # note that too many chains starting from the fiducial parameters can make the chain converge slower, if it fails to find secondary modes
-    n_true_start = 4              # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)
+    n_true_start = 0             # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)
 
     # create needed objects
 
@@ -82,7 +82,7 @@ if __name__ == '__main__':
                 if is_physical == True:
                     break
                 num_attempts += 1
-                assert num_attempts < 100
+                assert num_attempts < 500
 
     # create the overarching proposal manager object
     proposal_manager = get_default_proposal_manager(T_ladder, like_obj, strategy_params, starting_samples)
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     #makeScatterPlot(logLs_flattened, samples_flattened[:,6])
     #iteration_number = np.linspace(0, store_size, len(logLs_flattened))
     # print(mcc.logL_means)
-    #plotChains(mcc.logL_means)
+    plotChains(mcc.logL_means)
 
     #plt.semilogx(T_ladder.Ts,mcc.logL_vars[-1]*T_ladder.betas**2)
 
@@ -132,7 +132,7 @@ if do_corner_plot:
     import corner
     # reformat the samples to make the plots look nicer
     samples_format, params_true_format, labels = trial_likelihood.format_samples_output(samples_flattened, params_true, [rwt.idx_amp, rwt.idx_alpha, rwt.idx_beta, rwt.idx_delta])
-    np.savetxt('beta delta mass check 50000 v2.txt', samples_format)
+    np.savetxt('recovery run.txt', samples_format)
     # create the corner plot figure
     fig = plt.figure(figsize=(10, 7.5))
     figure = corner.corner(samples_format, fig=fig, bins=25, hist_kwargs={"density": True}, show_titles=True, title_fmt=None,

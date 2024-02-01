@@ -4,7 +4,7 @@ import numpy as np
 
 # global constants
 SECSYEAR = (24*365*3600)  # Number of seconds in a calendar year #TODO check should be sidereal?
-CLIGHT = 2.99792458e8     # Speed of light in m/s
+CLIGHT = 2.99792458e10     # Speed of light in m/s
 AU = 1.4959787e11         # Astronomical Unit in meters
 SQ3 = 1.732050807568877   # sqrt(3)
 MSOLAR = 4.925e-6  # solar mass to seconds -- added by Grace

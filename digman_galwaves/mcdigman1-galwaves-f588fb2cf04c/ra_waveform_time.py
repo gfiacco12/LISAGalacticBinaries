@@ -145,26 +145,47 @@ class BinaryTimeWaveformAmpFreqD():
 
 def TruthParamsCalculator(freq0, mass1, mass2, dl, tobs):
     #calculate frequencies using physical models and input them as truth params for the code
-    I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1/3) + (mass2/(0.6*wc.MSOLAR))**(1/3) ) # this is in s^3
-    chirpMass = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
-    totalMass = mass1 + mass2
-    eta = (chirpMass/totalMass)**(5/3)
-    I_orb = chirpMass**(5/3) / ((np.pi*freq0)**(4/3))
-    fdot_pp = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3)
-    #tides
-    fdot_tides = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)) / (1 - (3*I_wd*(np.pi*freq0)**(4/3)/chirpMass**(5/3)))) )
-    fddot_tides = (11/3)*(fdot_pp**2/freq0 ) * ( 1 + (((26/11)*(3*I_wd/I_orb)) / (1 - (3*I_wd/I_orb))) + ( (19/11) * ((3*I_wd/I_orb) / (1 - (3*I_wd/I_orb)))**2 ))
-    #1PN
-    fdot = 96/5*np.pi**(8/3)*freq0**(11/3)*chirpMass**(5/3) * (1 + ((743/1344)-(11*eta/16))*(8*np.pi*totalMass*freq0)**(2/3))
-    fddot = 96/5*np.pi**(8/3)*freq0**(8/3)*chirpMass**(5/3)*(fdot) * ((11/3) + (13/3)*((743/1344)-(11*eta/16))*(8*np.pi*totalMass*freq0)**(2/3))
-    amp = np.pi**(2/3) * chirpMass**(5/3) * freq0**(2/3) / dl
+    mtotal = mass1 + mass2
+    mchirp = (mass1*mass2)**(3/5) / (mass1 + mass2)**(1/5)
+    eta = (mchirp / mtotal)**(5/3)
+    x = (np.pi*freq0*mtotal)**(2/3)
+    dm = (1.-(4.*eta))**(1./2.)
+    mass1 = mtotal * (1. + dm) / 2.
+    mass2 = mtotal * (1. - dm) / 2.
+
+    #moments of inertia
+    I_wd = 8.51e-10 * ( (mass1/(0.6*wc.MSOLAR))**(1./3.) + (mass2/(0.6*wc.MSOLAR))**(1./3.) )
+    I_orb = mchirp**(5./3.) / ((np.pi*freq0)**(4./3.))
+
+    #tidal deformability parameters
+    r1 = 10**9 * (mass1/(0.6 * wc.MSOLAR))**(-1/3) * (1/wc.CLIGHT)
+    r2 = 10**9 * (mass2/(0.6 * wc.MSOLAR))**(-1/3) * (1/wc.CLIGHT)
+    y1 = (2/3) * 0.1 * r1**5
+    y2 = (2/3) * 0.1 * r2**5
+    lam1 = y1 / (mass1**5)
+    lam2 = y2 / (mass2**5)
+    lam = (8/13) * ((1 + 7*eta - 31*eta**2)*(lam1 + lam2) + np.sqrt(1 - 4*eta)*(1 + 9*eta - 11*eta**2)*(lam1 - lam2))
+
+    fdot_pp = (96./5.)*np.pi**(8./3.)*freq0**(11./3.)*mchirp**(5./3.)
+    amp_1PN = np.pi**(2./3.) * mchirp**(5./3.) * freq0**(2./3.) / dl
+
+    #corrections to fdot
+    deltaI = ((3*I_wd/I_orb)/(1 - (3*I_wd/I_orb)))
+    deltaLam = (39 / 8) * lam
+
+    #corrections to fddot
+    ddeltaI = (26/11)*deltaI + (19/11)*deltaI**2
+    ddeltaLam = (32/11) * deltaLam * x**5 + (21/11) * deltaLam**2 * x**10
+    #tides + deltaLam*x**5 
+    freqD_tides = fdot_pp * (1 + deltaI )
+    freqDD_tides = (11/3)*(fdot_pp**2/freq0) * (1 + ddeltaI)
 
     #alpha beta gamma calculations
     alpha = freq0 * tobs
-    beta = fdot_tides * (tobs**2)
-    gamma = fddot_tides * (tobs**3)
+    beta = freqD_tides * (tobs**2)
+    gamma = freqDD_tides * (tobs**3)
     delta = gamma - (11/3)*(beta**2 / alpha)
-    return amp, alpha, beta, delta
+    return amp_1PN, alpha, beta, delta
 
 @njit()
 def ExtractAmpPhase_inplace(AET_Amps, AET_Phases, AET_FTs, AET_FTds, AA, PP, FT, FTd, RRs, IIs, dRRs, dIIs, NT):
