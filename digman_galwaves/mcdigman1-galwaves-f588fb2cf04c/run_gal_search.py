@@ -36,9 +36,9 @@ if __name__ == '__main__':
     # starting variables
     n_chain = 2                 # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin =50000                   # number of iterations to discard as burn in
+    n_burnin = 0                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 200000                 # number of samples to store total
+    store_size = 5000000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
@@ -61,6 +61,8 @@ if __name__ == '__main__':
     like_obj = trial_likelihood.get_noiseless_gb_likelihood(params_true.copy(), noise_AET_dense, sigma_prior_lim, strategy_params)  # get the likelihood object
     params_true = like_obj.correct_bounds(params_true)                 # make sure the conventions on the parameters match
     print(like_obj.sigmas_in)
+    print(like_obj.low_lims)
+    print(like_obj.high_lims)
     logL_truths = like_obj.get_loglike(params_true)
     print("Log Likelihoods of truth parameters:", logL_truths)
 
