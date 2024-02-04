@@ -239,8 +239,7 @@ def advance_step_ptmcmc(itrb, samples, logLs, T_ladder, accept_record, proposal_
         new_point, density_fac, idx_jump, is_success = proposal_manager.dispatch_jump(samples[itrb-1, itrt], itrt)
 
         # if the point failed, just set the likelihood to negative infinity so it won't be accepted
-        #logL_new = -np.inf
-        logL_new = 1
+        logL_new = -np.inf
         if is_success:
             # skip likelihood evaluation if proposal is marked as a failure
             new_point = like_obj.correct_bounds(new_point)   # make sure the point is legal if possible
@@ -251,8 +250,7 @@ def advance_step_ptmcmc(itrb, samples, logLs, T_ladder, accept_record, proposal_
             is_physical = betadelta_m1m2_check(new_point[2], new_point[3], freq0, (4.*wc.SECSYEAR), params_true[6], params_true[5])    
             if is_physical:
                 # if the point passes, get the likelihood
-                #logL_new = like_obj.get_loglike(new_point)
-                logL_new = 1       # get the likelihood
+                logL_new = like_obj.get_loglike(new_point)
 
         test = np.log(np.random.uniform(0., 1.))             # get the test draw to determine if we accept the point
         if betas[itrt]*(logL_new-logLs[itrb-1, itrt])+density_fac > test:

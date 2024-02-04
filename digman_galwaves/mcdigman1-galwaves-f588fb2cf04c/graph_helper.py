@@ -9,7 +9,7 @@ from wdm_const import *
 def makeHistogramofLogLike(data):
     plt.hist(data)
     plt.title("Loglikelihood of Samples")
-    plt.show()
+    plt.savefig("LogL values")
     return
 
 def makeScatterPlot(data_x, data_y):
@@ -43,7 +43,7 @@ def plotChains(data):
     plt.ylim(-1e5, 7e5)
     plt.xlabel("Iterations")
     plt.ylabel("LogL")
-    plt.show()
+    plt.savefig("chains fig")
 
 def betadelta_m1m2_check(beta, delta, freq0, tobs, mc, mt):
     params_true = np.array([mc / MSOLAR, mt / MSOLAR])      

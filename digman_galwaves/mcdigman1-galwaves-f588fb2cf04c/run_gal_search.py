@@ -34,11 +34,11 @@ if __name__ == '__main__':
     t0 = perf_counter()
 
     # starting variables
-    n_chain = 2                 # number of total chains for parallel tempering
+    n_chain = 20                 # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin = 0                   # number of iterations to discard as burn in
+    n_burnin = 100000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 5000000                 # number of samples to store total
+    store_size = 500000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     params_true = np.array([amp, alpha, beta, delta, np.log(2*wc.KPCSEC), 1.4*wc.MSOLAR, 0.6018927820922144*wc.MSOLAR, -0.26,  4.6, 0.25,  1.5,  1.6])  # true parameters for search -- Add in total mass and chirp mass
     print(alpha, beta, delta)
     # note that too many chains starting from the fiducial parameters can make the chain converge slower, if it fails to find secondary modes
-    n_true_start = 0             # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)
+    n_true_start = 4             # how many chains to start at params_true (0 for a blind search; the rest will start from prior draws)
 
     # create needed objects
 
@@ -114,11 +114,11 @@ if __name__ == '__main__':
     # get flattened samples for plotting
     samples_flattened, logLs_flattened, logLs_unflattened = mcc.get_stored_flattened(corr_sum.restrict_n_burnin(mcc, n_burnin)) 
             
-    #makeHistogramofLogLike(logLs_flattened)
+    makeHistogramofLogLike(logLs_flattened)
 
     #makeScatterPlot(logLs_flattened, samples_flattened[:,6])
     #iteration_number = np.linspace(0, store_size, len(logLs_flattened))
-    # print(mcc.logL_means)
+    #print(np.max(mcc.logL_means))
     plotChains(mcc.logL_means)
 
     #plt.semilogx(T_ladder.Ts,mcc.logL_vars[-1]*T_ladder.betas**2)
@@ -148,4 +148,4 @@ if do_corner_plot:
     for ax in figure.get_axes():
         ax.tick_params(which='both', direction='in', bottom=True, top=True, left=True, right=True, labelsize=6)
     #plt.show
-    plt.savefig('prior_test.png')
+    plt.savefig('Bias Tide Run.png')
