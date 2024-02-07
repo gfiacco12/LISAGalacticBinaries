@@ -63,13 +63,22 @@ def betadelta_m1m2_check(beta, delta, freq0, tobs, mc, mt):
                         return True
     return False
 
+def mcmt_check(mc, mt):
+    #make sure points are physical
+    eta = (mc/mt)**(5./3.)
+    if eta <= 0.249:
+        m1, m2, q = get_comp_mass_Mc_Mt(mc, mt)
+        if m1 <= 1.5*MSOLAR and q <= 1.0:
+            return True
+    return False
+
 def get_comp_mass_Mc_Mt(Mc, Mt):
     eta = (Mc/Mt)**(5./3.)
     qq = ((1-2.*eta) - np.sqrt((1-2.*eta)**2. - 4.*eta**2.))/(2.*eta)
     M1=Mt/(1.+qq)
     M2=qq*Mt/(1.+qq)
     q = M2 / M1
-    return M1, M2
+    return M1, M2, q
 
 def getFrequency_McMt_Tides(freq0, t_obs, params, results_exact):
     chirpMass, totalMass = params

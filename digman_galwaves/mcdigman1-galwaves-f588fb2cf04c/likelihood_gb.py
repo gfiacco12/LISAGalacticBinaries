@@ -20,6 +20,7 @@ import wdm_const as wc
 import mcmc_params as mcp
 from ra_waveform_time import BinaryTimeWaveformAmpFreqD
 import ra_waveform_time as rwt
+from graph_helper import get_comp_mass_Mc_Mt
 
 fisher_eps_default = np.array([1.e-25, 1.e-0, 1.e-3, 1.e-6, 1.e-25, 1.e-9, 1.e-9, 1.e-4, 1.e-4, 1.e-4, 1.e-4, 1.e-4])
 #eps for alpha = 1.e0, beta = 1.e-3, delta = 1.e-6, 1.e-10, 1.e-19, 1.e-30,
@@ -157,7 +158,6 @@ class GalacticBinaryLikelihood(Likelihood):
         return check_bounds(params_in, self.low_lims, self.high_lims)
 
 
-@njit()
 def check_bounds(params_in, low_lims, high_lims):
     """check if a sample is within the prior range"""
     for itrp in range(params_in.size):
@@ -286,12 +286,12 @@ def create_prior_model(params_fid, sigmas, sigma_prior_lim):
     high_lims[rwt.idx_phi0] = np.pi
 
     #chirp mass priors
-    low_lims[rwt.idx_mchirp] = max(params_fid[rwt.idx_mchirp]-2*sigma_prior_lim*sigmas[rwt.idx_mchirp], 0)
-    high_lims[rwt.idx_mchirp] =  params_fid[rwt.idx_mchirp]+2*sigma_prior_lim*sigmas[rwt.idx_mchirp]
+    low_lims[rwt.idx_mchirp] = 0.26*wc.MSOLAR
+    high_lims[rwt.idx_mchirp] =  1.2*wc.MSOLAR
 
     #total mass priors
-    low_lims[rwt.idx_mtotal] = max(params_fid[rwt.idx_mtotal]-2*sigma_prior_lim*sigmas[rwt.idx_mtotal], 0)
-    high_lims[rwt.idx_mtotal] = params_fid[rwt.idx_mtotal]+2*sigma_prior_lim*sigmas[rwt.idx_mtotal]
+    low_lims[rwt.idx_mtotal] = 0.5*wc.MSOLAR
+    high_lims[rwt.idx_mtotal] = 3.0 *wc.MSOLAR
 
     return low_lims, high_lims
 
@@ -330,17 +330,6 @@ def format_samples_output(samples, params_fid, params_to_format = None):
             label = r"$10^{"+str(-log10_A_base)+r"}$"+label
             samples_got[:, rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
             params_fid_got[rwt.idx_amp] /= 10**log10_A_base             # reduce amplitude to be order unity
-        # elif (i == rwt.idx_freq0):
-        #     #samples_got[:, rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
-        #     samples_got[:, rwt.idx_freq0] *= 4*(wc.SECSYEAR)                       # convert frequency in Hz to dimensionless
-        #     #params_fid_got[rwt.idx_freq0] -= params_fid[rwt.idx_freq0]  # convert frequency to shift in frequency
-        #     params_fid_got[rwt.idx_freq0] *= 4*(wc.SECSYEAR)                       # convert frequency in Hz to dimensionless
-        # elif (i == rwt.idx_freqD):
-        #     samples_got[:, rwt.idx_freqD] *= (4*wc.SECSYEAR)**2                       # convert frequency in Hz^2 to dimensionless
-        #     params_fid_got[rwt.idx_freqD] *= (4*wc.SECSYEAR)**2                     # convert frequency in Hz^2 to dimensionless
-        # elif (i == rwt.idx_freqDD):
-        #     samples_got[:, rwt.idx_freqDD] = samples_got[:, rwt.idx_freqDD] * (4*wc.SECSYEAR)**3                      # convert frequency in Hz^2 to dimensionless
-        #     params_fid_got[rwt.idx_freqDD] = params_fid_got[rwt.idx_freqDD] * (4*wc.SECSYEAR)**3                     # convert frequency in Hz^2 to dimensionless
         elif (i == rwt.idx_logdl):
             samples_got[:, rwt.idx_logdl] = np.log(np.exp(samples_got[:,rwt.idx_logdl])/wc.KPCSEC)    #convert back to kpc
             params_fid_got[rwt.idx_logdl] = np.log(np.exp(params_fid_got[rwt.idx_logdl])/wc.KPCSEC)   #convert back to kpc
@@ -355,20 +344,32 @@ def format_samples_output(samples, params_fid, params_to_format = None):
         params_fin.append(params_fid_got[i])
 
     for sample in samples_got:
-        s = []
+        formatted_sample = []
         for i in params_to_format:
-            s.append(sample[i])
+            formatted_sample.append(sample[i])
+
+        m1, m2, q = get_comp_mass_Mc_Mt(sample[rwt.idx_mchirp], sample[rwt.idx_mtotal])
+        formatted_sample.append(m1)
+        formatted_sample.append(m2)
+        formatted_sample.append(q)
+
         # gamma = s[rwt.idx_freqDD] 
         # alpha = s[rwt.idx_freq0]
         # beta = s[rwt.idx_freqD]
         # delta = (gamma - (11/3) * (beta**2 / alpha))
         # s.append(delta)
-        samples_fin.append(s)
+        samples_fin.append(formatted_sample)
 
-    #delta_params = (params_fid_got[rwt.idx_freqDD] - (11/3)*(params_fid_got[rwt.idx_freqD]**2 / params_fid_got[rwt.idx_freq0]))
-    #params_fin.append(delta_params)
+    m1_params = 0.8
+    m2_params = 0.6
+    q_params = 0.75
+    params_fin.append(m1_params)
+    params_fin.append(m2_params)
+    params_fin.append(q_params)
 
-    #labels.append(r"$\delta$")
+    labels.append(r"$M_{1}$")
+    labels.append(r"$M_{2}$")
+    labels.append(r"$q$")
     print (labels)
     
     return np.array(samples_fin), np.array(params_fin), labels

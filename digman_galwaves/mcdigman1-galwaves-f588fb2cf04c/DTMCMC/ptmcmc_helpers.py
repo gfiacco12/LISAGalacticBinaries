@@ -1,6 +1,6 @@
 """C 2023 Matthew C. Digman
 Module with the overall PTMCMC Chain object"""
-from graph_helper import betadelta_m1m2_check
+from graph_helper import betadelta_m1m2_check, mcmt_check, get_comp_mass_Mc_Mt
 import numpy as np
 from numba import njit
 import wdm_const as wc
@@ -234,6 +234,8 @@ def advance_step_ptmcmc(itrb, samples, logLs, T_ladder, accept_record, proposal_
     """advance a single step step in the ptmcmc chain"""
     n_chain = T_ladder.n_chain
     betas = T_ladder.betas
+    logpx = 0.
+    logpy = 0.
 
     for itrt in range(0, n_chain):
         new_point, density_fac, idx_jump, is_success = proposal_manager.dispatch_jump(samples[itrb-1, itrt], itrt)
@@ -242,21 +244,30 @@ def advance_step_ptmcmc(itrb, samples, logLs, T_ladder, accept_record, proposal_
         logL_new = -np.inf
         if is_success:
             # skip likelihood evaluation if proposal is marked as a failure
-            new_point = like_obj.correct_bounds(new_point)   # make sure the point is legal if possible
-            is_success = like_obj.check_bounds(new_point)       # check that the point was correctly made legal
+            new_point_corrected = like_obj.correct_bounds(new_point)   # make sure the point is legal if possible
+            is_corrected_success = like_obj.check_bounds(new_point_corrected)       # check that the point was correctly made legal
 
-            alpha = new_point[1]
-            freq0 = alpha / (4.*wc.SECSYEAR)
-            is_physical = betadelta_m1m2_check(new_point[2], new_point[3], freq0, (4.*wc.SECSYEAR), params_true[6], params_true[5])    
-            if is_physical:
-                # if the point passes, get the likelihood
-                logL_new = like_obj.get_loglike(new_point)
+            if is_corrected_success:
+                new_point = new_point_corrected
+
+                mc = new_point[6]
+                mt = new_point[5]
+                #freq0 = alpha / (4.*wc.SECSYEAR)
+                is_physical = mcmt_check(mc, mt)
+                if is_physical:
+                    # if the point passes, get the likelihood
+                    logL_new = like_obj.get_loglike(new_point)
+                    m1, m2, q = get_comp_mass_Mc_Mt(mc, mt)
+                    jac = (5./3.) * (q)/(mc*(1-q))
+                    #calculate jacobian 
+                    logpy = np.log(jac)
 
         test = np.log(np.random.uniform(0., 1.))             # get the test draw to determine if we accept the point
-        if betas[itrt]*(logL_new-logLs[itrb-1, itrt])+density_fac > test:
+        if betas[itrt]*(logL_new-logLs[itrb-1, itrt])+logpy-logpx > test:
             # the draw was accepted, assign its parameters
             samples[itrb, itrt] = new_point
             logLs[itrb, itrt] = logL_new
+            logpx = logpy
             accept_record[0, itrt, idx_jump] += 1
         else:
             # the draw was rejected, assign the old parameters
