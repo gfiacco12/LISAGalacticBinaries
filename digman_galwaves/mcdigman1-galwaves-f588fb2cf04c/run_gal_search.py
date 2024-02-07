@@ -34,11 +34,11 @@ if __name__ == '__main__':
     t0 = perf_counter()
 
     # starting variables
-    n_chain = 20                 # number of total chains for parallel tempering
+    n_chain = 80                 # number of total chains for parallel tempering
     n_cold = 2                         # number of T=1 chains for parallel tempering
-    n_burnin = 100000                   # number of iterations to discard as burn in
+    n_burnin = 500000                   # number of iterations to discard as burn in
     block_size = 1000                  # number of iterations per block when advancing the chain state
-    store_size = 500000                 # number of samples to store total
+    store_size = 1500000                 # number of samples to store total
     N_blocks = store_size//block_size  # number of blocks the sampler must iterate through
 
     de_size = 5000                     # number of samples to store in the differential evolution buffer
@@ -148,4 +148,4 @@ if do_corner_plot:
     for ax in figure.get_axes():
         ax.tick_params(which='both', direction='in', bottom=True, top=True, left=True, right=True, labelsize=6)
     #plt.show
-    plt.show()
+    plt.savefig("Mc Mt param.png")
