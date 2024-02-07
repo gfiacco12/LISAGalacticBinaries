@@ -43,7 +43,7 @@ def plotChains(data):
     plt.ylim(-1e5, 7e5)
     plt.xlabel("Iterations")
     plt.ylabel("LogL")
-    plt.savefig("chains 80 chains fig.png")
+    plt.savefig("80 chains v2.png")
 
 def betadelta_m1m2_check(beta, delta, freq0, tobs, mc, mt):
     params_true = np.array([mc / MSOLAR, mt / MSOLAR])      

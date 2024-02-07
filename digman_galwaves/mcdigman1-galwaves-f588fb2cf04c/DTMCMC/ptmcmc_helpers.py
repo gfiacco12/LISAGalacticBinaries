@@ -242,6 +242,7 @@ def advance_step_ptmcmc(itrb, samples, logLs, T_ladder, accept_record, proposal_
 
         # if the point failed, just set the likelihood to negative infinity so it won't be accepted
         logL_new = -np.inf
+        #logL_new = 0
         if is_success:
             # skip likelihood evaluation if proposal is marked as a failure
             new_point_corrected = like_obj.correct_bounds(new_point)   # make sure the point is legal if possible
@@ -257,8 +258,9 @@ def advance_step_ptmcmc(itrb, samples, logLs, T_ladder, accept_record, proposal_
                 if is_physical:
                     # if the point passes, get the likelihood
                     logL_new = like_obj.get_loglike(new_point)
+                    #logL_new = 0
                     m1, m2, q = get_comp_mass_Mc_Mt(mc, mt)
-                    jac = (5./3.) * (q)/(mc*(1-q))
+                    jac = (5./3.) * (q)/(mc*(q-1))
                     #calculate jacobian 
                     logpy = np.log(jac)
 
